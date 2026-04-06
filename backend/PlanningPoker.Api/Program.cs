@@ -1,8 +1,14 @@
 using PlanningPoker.Api.Hubs;
+using PlanningPoker.Application.Interfaces;
+using PlanningPoker.Application.Services;
+using PlanningPoker.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHealthChecks();
+
+builder.Services.AddSingleton<IRoomRepository, InMemoryRoomRepository>();
+builder.Services.AddSingleton<IRoomService, RoomService>();
 
 builder.Services.AddSignalR(options =>
 {

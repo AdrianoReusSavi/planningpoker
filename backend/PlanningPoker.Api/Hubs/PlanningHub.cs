@@ -1,16 +1,142 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
+using PlanningPoker.Application.Interfaces;
+using PlanningPoker.Domain.Enums;
 
 namespace PlanningPoker.Api.Hubs;
 
-public class PlanningHub : Hub
+public class PlanningHub(
+    IRoomService roomService,
+    IHubContext<PlanningHub> hubContext,
+    ILogger<PlanningHub> logger) : Hub
 {
-    public override async Task OnConnectedAsync()
+    private static readonly ConcurrentDictionary<string, CancellationTokenSource> DisconnectTimers = new();
+    private const int DisconnectTimeoutSeconds = 20;
+
+    public async Task Ping()
+        => await Clients.Caller.SendAsync("Pong");
+
+    public async Task<string?> CreateRoom(string name, string roomName, EstimationOptions votingDeck)
     {
-        await base.OnConnectedAsync();
+        var result = roomService.CreateRoom(name, roomName, votingDeck, Context.ConnectionId);
+        if (result is null) return null;
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
+        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
+        return result.PlayerId;
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    public async Task<string?> EnterRoom(string roomId, string name)
     {
-        await base.OnDisconnectedAsync(exception);
+        var result = roomService.EnterRoom(roomId, name, Context.ConnectionId);
+        if (result is null) return null;
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
+        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
+        return result.PlayerId;
+    }
+
+    public async Task WatchRoom(string roomId)
+    {
+        var snapshot = roomService.WatchRoom(roomId, Context.ConnectionId);
+        if (snapshot is null) return;
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+        await Clients.Caller.SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task<bool> Reconnect(string roomId, string playerId)
+    {
+        var result = roomService.Reconnect(roomId, playerId, Context.ConnectionId);
+        if (result is null) return false;
+
+        CancelDisconnectTimer(playerId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
+        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
+        return true;
+    }
+
+    public async Task GetRoomSettings()
+    {
+        var snapshot = roomService.GetRoomSettings(Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Caller.SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task TransferOwnership(string roomId, string targetPlayerId)
+    {
+        var snapshot = roomService.TransferOwnership(roomId, targetPlayerId, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task KickPlayer(string roomId, string targetPlayerId)
+    {
+        var result = roomService.KickPlayer(roomId, targetPlayerId, Context.ConnectionId);
+        if (result is null) return;
+
+        CancelDisconnectTimer(targetPlayerId);
+        await Groups.RemoveFromGroupAsync(result.TargetConnectionId, roomId);
+        await Clients.Client(result.TargetConnectionId).SendAsync("KICKED");
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
+    }
+
+    public async Task LeaveRoom(string roomId)
+    {
+        var result = roomService.LeaveRoom(roomId, Context.ConnectionId);
+        if (result is null) return;
+
+        if (result.PlayerId is not null)
+            CancelDisconnectTimer(result.PlayerId);
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+
+        if (result.Snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? ex)
+    {
+        var result = roomService.HandleDisconnect(Context.ConnectionId);
+        if (result is not null)
+        {
+            await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
+            StartDisconnectTimer(result.RoomId, result.PlayerId);
+        }
+
+        await base.OnDisconnectedAsync(ex);
+    }
+
+    private static void CancelDisconnectTimer(string playerId)
+    {
+        if (DisconnectTimers.TryRemove(playerId, out var cts))
+            cts.Cancel();
+    }
+
+    private void StartDisconnectTimer(string roomId, string playerId)
+    {
+        var cts = new CancellationTokenSource();
+        DisconnectTimers[playerId] = cts;
+
+        var service = roomService;
+        var context = hubContext;
+        var log = logger;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(DisconnectTimeoutSeconds), cts.Token);
+                DisconnectTimers.TryRemove(playerId, out _);
+                var removal = service.PermanentlyRemovePlayer(roomId, playerId);
+                if (removal.Snapshot is not null)
+                    await context.Clients.Group(roomId).SendAsync("STATE_SYNC", removal.Snapshot);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception removeEx)
+            {
+                log.LogError(removeEx, "Error removing player {PlayerId} from room {RoomId}", playerId, roomId);
+            }
+        });
     }
 }
