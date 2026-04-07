@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useConnection } from '../contexts/ConnectionContext'
 import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
+import { useBroadcastChannel } from '../hooks/useBroadcastChannel'
 import { useToast } from '../contexts/ToastContext'
 import { getDeckByKey } from '../constants/estimationOptions'
 import RoomHeader from './RoomHeader'
@@ -28,6 +29,7 @@ export default function Room() {
   const [vote, setVote] = useState('')
   const [modal, setModal] = useState<ModalState | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [miniViewOpen, setMiniViewOpen] = useState(false)
   const [revealLoading, setRevealLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
@@ -50,6 +52,32 @@ export default function Room() {
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
+
+  const postRef = useRef<(data: unknown) => void>(() => {})
+  const postToMini = useBroadcastChannel('planning-poker-sync', useCallback((data: Record<string, unknown>) => {
+    if (data.type === 'MINI_OPENED') {
+      setMiniViewOpen(true)
+    } else if (data.type === 'MINI_CLOSED') {
+      setMiniViewOpen(false)
+    } else if (data.type === 'VOTE' && roomId) {
+      setVote(data.value as string)
+      actions.submitVote(roomId, data.value as string).catch(() => {})
+    } else if (data.type === 'REVEAL' && roomId) {
+      actions.revealVotes(roomId).catch(() => {})
+    } else if (data.type === 'RESET' && roomId) {
+      actions.resetVotes(roomId).catch(() => {})
+    } else if (data.type === 'REQUEST_SYNC' && snapshot && playerId) {
+      postRef.current({ type: 'SYNC', snapshot, playerId, vote })
+    }
+  }, [roomId, snapshot, playerId, vote]))
+
+  postRef.current = postToMini
+
+  useEffect(() => {
+    if (snapshot && playerId) {
+      postToMini({ type: 'SYNC', snapshot, playerId, vote })
+    }
+  }, [snapshot, playerId, vote, postToMini])
 
   useEffect(() => {
     if (!flipped) setVote('')
@@ -147,6 +175,10 @@ export default function Room() {
     showToast('Link copiado com sucesso!')
   }
 
+  const openMiniView = () => {
+    window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
+  }
+
   return (
     <div className="room">
       <RoomHeader
@@ -157,6 +189,7 @@ export default function Room() {
         onCopyLink={copyLink}
         onLeave={requestLeave}
         onOpenHistory={() => setHistoryOpen(true)}
+        onOpenMiniView={openMiniView}
       />
 
       <PlayerGrid
@@ -177,22 +210,26 @@ export default function Room() {
 
       {!isWatching && (
         <>
-          <VotingControls
-            isLeader={isLeader}
-            flipped={flipped}
-            allVoted={allVoted}
-            someVoted={someVoted}
-            revealLoading={revealLoading}
-            resetLoading={resetLoading}
-            onReveal={revealVotes}
-            onReset={resetVotes}
-          />
-          <VotingDeck
-            cards={votingDeck}
-            selectedVote={vote}
-            onVote={submitVote}
-            disabled={flipped}
-          />
+          {!miniViewOpen && (
+            <VotingControls
+              isLeader={isLeader}
+              flipped={flipped}
+              allVoted={allVoted}
+              someVoted={someVoted}
+              revealLoading={revealLoading}
+              resetLoading={resetLoading}
+              onReveal={revealVotes}
+              onReset={resetVotes}
+            />
+          )}
+          {!miniViewOpen && (
+            <VotingDeck
+              cards={votingDeck}
+              selectedVote={vote}
+              onVote={submitVote}
+              disabled={flipped}
+            />
+          )}
         </>
       )}
 

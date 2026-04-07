@@ -1,4 +1,4 @@
-import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon } from './Icons'
+import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon, ExternalLinkIcon } from './Icons'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
@@ -10,6 +10,7 @@ interface RoomHeaderProps {
   onCopyLink: () => void
   onLeave: () => void
   onOpenHistory: () => void
+  onOpenMiniView: () => void
 }
 
 const STATUS_CONFIG = {
@@ -19,7 +20,7 @@ const STATUS_CONFIG = {
   disconnected: { className: 'tag-error', label: 'Desconectado' },
 } as const
 
-export default function RoomHeader({ roomName, status, leaveLoading, historyCount, onCopyLink, onLeave, onOpenHistory }: RoomHeaderProps) {
+export default function RoomHeader({ roomName, status, leaveLoading, historyCount, onCopyLink, onLeave, onOpenHistory, onOpenMiniView }: RoomHeaderProps) {
   const statusInfo = STATUS_CONFIG[status]
 
   return (
@@ -32,6 +33,9 @@ export default function RoomHeader({ roomName, status, leaveLoading, historyCoun
         <button className="btn-icon" onClick={onOpenHistory} title="Histórico de rodadas">
           <HistoryIcon />
           {historyCount > 0 && <span className="btn-icon-badge">{historyCount}</span>}
+        </button>
+        <button className="btn-icon" onClick={onOpenMiniView} title="Abrir painel de votação em popup">
+          <ExternalLinkIcon />
         </button>
         <button className="btn-outlined primary" onClick={onCopyLink}>
           <CopyIcon /> Convidar
