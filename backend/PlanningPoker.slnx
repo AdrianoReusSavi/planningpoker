@@ -3,4 +3,5 @@
   <Project Path="PlanningPoker.Application/PlanningPoker.Application.csproj" Id="c4462354-e50d-4f6c-a6ec-bf38685d6ca1" />
   <Project Path="PlanningPoker.Domain/PlanningPoker.Domain.csproj" Id="2a518a5c-7a09-4789-b86a-aeb3464c2b29" />
   <Project Path="PlanningPoker.Infrastructure/PlanningPoker.Infrastructure.csproj" Id="2fc24387-1ae7-49fb-8d58-37753572cac1" />
+  <Project Path="PlanningPoker.Tests/PlanningPoker.Tests.csproj" />
 </Solution>
