@@ -30,3 +30,4 @@ Desktop.ini
 node_modules/
 dist/
 .next/
+*.tsbuildinfo
