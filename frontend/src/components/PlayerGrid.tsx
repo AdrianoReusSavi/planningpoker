@@ -11,7 +11,11 @@ export interface PlayerView {
 interface PlayerGridProps {
   players: PlayerView[]
   ownerId: string
+  currentPlayerId: string | null
+  isLeader: boolean
   flipped: boolean
+  onKick: (playerId: string) => void
+  onTransfer: (playerId: string) => void
 }
 
 const CARD_PALETTE = [
@@ -19,23 +23,30 @@ const CARD_PALETTE = [
   '#22d3ee', '#f87171', '#facc15', '#a78bfa', '#34d399',
 ]
 
-export default function PlayerGrid({ players, ownerId, flipped }: PlayerGridProps) {
+export default function PlayerGrid({ players, ownerId, currentPlayerId, isLeader, flipped, onKick, onTransfer }: PlayerGridProps) {
   return (
     <div className="user-group">
-      {players.map((user, idx) => (
-        <div key={user.id} className="card-deal" style={{ animationDelay: `${idx * 80}ms` }}>
-          <UserCard
-            username={user.username}
-            hasVoted={user.hasVoted}
-            vote={user.vote}
-            connected={user.connected}
-            flipped={user.hasVoted && flipped}
-            revealDelay={flipped ? idx * 150 : 0}
-            color={CARD_PALETTE[idx % CARD_PALETTE.length]}
-            isOwner={user.id === ownerId}
-          />
-        </div>
-      ))}
+      {players.map((user, idx) => {
+        const isSelf = user.id === currentPlayerId
+        return (
+          <div key={user.id} className="card-deal" style={{ animationDelay: `${idx * 80}ms` }}>
+            <UserCard
+              username={user.username}
+              hasVoted={user.hasVoted}
+              vote={user.vote}
+              connected={user.connected}
+              flipped={user.hasVoted && flipped}
+              revealDelay={flipped ? idx * 150 : 0}
+              color={CARD_PALETTE[idx % CARD_PALETTE.length]}
+              isOwner={user.id === ownerId}
+              canKick={isLeader && !isSelf}
+              onKick={() => onKick(user.id)}
+              canTransfer={isLeader && !isSelf && user.connected}
+              onTransfer={() => onTransfer(user.id)}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }

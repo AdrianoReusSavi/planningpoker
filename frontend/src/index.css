@@ -386,6 +386,49 @@ body {
   align-items: center;
   gap: 7px;
   margin: 8px 6px;
+  position: relative;
+}
+
+.user-card-action {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.user-card:hover .user-card-action {
+  opacity: 1;
+}
+
+.user-card-action.kick {
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+}
+
+.user-card-action.kick:hover {
+  background: #dc2626;
+}
+
+.user-card-action.transfer {
+  top: -6px;
+  left: -6px;
+  background: #f59e0b;
+}
+
+.user-card-action.transfer:hover {
+  background: #d97706;
 }
 
 .user-card.disconnected {

@@ -1,4 +1,4 @@
-import { CrownIcon } from './Icons'
+import { CrownIcon, CloseIcon } from './Icons'
 
 interface UserCardProps {
   username: string
@@ -9,11 +9,33 @@ interface UserCardProps {
   revealDelay: number
   color: string
   isOwner: boolean
+  canKick: boolean
+  onKick: () => void
+  canTransfer: boolean
+  onTransfer: () => void
 }
 
-export default function UserCard({ username, hasVoted, vote, connected, flipped, revealDelay, color, isOwner }: UserCardProps) {
+export default function UserCard({ username, hasVoted, vote, connected, flipped, revealDelay, color, isOwner, canKick, onKick, canTransfer, onTransfer }: UserCardProps) {
   return (
     <div className={`user-card ${!connected ? 'disconnected' : ''}`}>
+      {canTransfer && (
+        <button
+          className="user-card-action transfer"
+          onClick={(e) => { e.stopPropagation(); onTransfer() }}
+          title={`Transferir liderança para ${username}`}
+        >
+          <CrownIcon />
+        </button>
+      )}
+      {canKick && (
+        <button
+          className="user-card-action kick"
+          onClick={(e) => { e.stopPropagation(); onKick() }}
+          title={`Remover ${username}`}
+        >
+          <CloseIcon />
+        </button>
+      )}
       <div className="card-flip-container">
         <div
           className={`card-flip ${flipped ? 'flipped' : ''}`}

@@ -10,13 +10,21 @@ import VotingControls from './VotingControls'
 import VotingDeck from './VotingDeck'
 import ConfirmModal from './ConfirmModal'
 
+interface ModalState {
+  title: string
+  message: string
+  confirmText: string
+  danger?: boolean
+  onConfirm: () => void
+}
+
 export default function Room() {
   const { connection, connected, status } = useConnection()
   const { snapshot, playerId, isWatching, clearRoom } = useRoom()
   const actions = useRoomActions(connection, connected)
   const { showToast } = useToast()
   const [vote, setVote] = useState('')
-  const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const [modal, setModal] = useState<ModalState | null>(null)
   const [revealLoading, setRevealLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
@@ -77,14 +85,57 @@ export default function Room() {
     }
   }
 
-  const confirmLeave = async () => {
-    setShowLeaveModal(false)
-    setLeaveLoading(true)
-    try {
-      await actions.leaveRoom(roomId)
-    } finally {
-      clearRoom()
-    }
+  const requestLeave = () => {
+    setModal({
+      title: 'Sair da sala',
+      message: 'Tem certeza que deseja sair? Você será removido da votação.',
+      confirmText: 'Sair',
+      danger: true,
+      onConfirm: async () => {
+        setModal(null)
+        setLeaveLoading(true)
+        try {
+          await actions.leaveRoom(roomId)
+        } finally {
+          clearRoom()
+        }
+      },
+    })
+  }
+
+  const requestKick = (targetId: string) => {
+    const target = players.find(u => u.id === targetId)
+    setModal({
+      title: 'Remover participante',
+      message: `Tem certeza que deseja remover ${target?.username ?? 'este participante'} da sala?`,
+      confirmText: 'Remover',
+      danger: true,
+      onConfirm: async () => {
+        setModal(null)
+        try {
+          await actions.kickPlayer(roomId, targetId)
+        } catch {
+          showToast('Falha ao remover participante.', 'error')
+        }
+      },
+    })
+  }
+
+  const requestTransfer = (targetId: string) => {
+    const target = players.find(u => u.id === targetId)
+    setModal({
+      title: 'Transferir liderança',
+      message: `Transferir liderança para ${target?.username ?? 'este participante'}? Você perderá os controles de líder.`,
+      confirmText: 'Transferir',
+      onConfirm: async () => {
+        setModal(null)
+        try {
+          await actions.transferOwnership(roomId, targetId)
+        } catch {
+          showToast('Falha ao transferir liderança.', 'error')
+        }
+      },
+    })
   }
 
   const copyLink = () => {
@@ -100,13 +151,17 @@ export default function Room() {
         status={status}
         leaveLoading={leaveLoading}
         onCopyLink={copyLink}
-        onLeave={() => setShowLeaveModal(true)}
+        onLeave={requestLeave}
       />
 
       <PlayerGrid
         players={players}
         ownerId={snapshot?.ownerId ?? ''}
+        currentPlayerId={playerId}
+        isLeader={isLeader}
         flipped={flipped}
+        onKick={requestKick}
+        onTransfer={requestTransfer}
       />
 
       {!isWatching && (
@@ -130,14 +185,14 @@ export default function Room() {
         </>
       )}
 
-      {showLeaveModal && (
+      {modal && (
         <ConfirmModal
-          title="Sair da sala"
-          message="Tem certeza que deseja sair? Você será removido da votação."
-          confirmText="Sair"
-          danger
-          onConfirm={confirmLeave}
-          onCancel={() => setShowLeaveModal(false)}
+          title={modal.title}
+          message={modal.message}
+          confirmText={modal.confirmText}
+          danger={modal.danger}
+          onConfirm={modal.onConfirm}
+          onCancel={() => setModal(null)}
         />
       )}
     </div>
