@@ -6,8 +6,10 @@ import { useToast } from '../contexts/ToastContext'
 import { getDeckByKey } from '../constants/estimationOptions'
 import RoomHeader from './RoomHeader'
 import PlayerGrid, { type PlayerView } from './PlayerGrid'
+import VoteSummary from './VoteSummary'
 import VotingControls from './VotingControls'
 import VotingDeck from './VotingDeck'
+import RoundHistory from './RoundHistory'
 import ConfirmModal from './ConfirmModal'
 
 interface ModalState {
@@ -25,6 +27,7 @@ export default function Room() {
   const { showToast } = useToast()
   const [vote, setVote] = useState('')
   const [modal, setModal] = useState<ModalState | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [revealLoading, setRevealLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
@@ -150,8 +153,10 @@ export default function Room() {
         roomName={snapshot?.roomName ?? ''}
         status={status}
         leaveLoading={leaveLoading}
+        historyCount={snapshot?.history?.length ?? 0}
         onCopyLink={copyLink}
         onLeave={requestLeave}
+        onOpenHistory={() => setHistoryOpen(true)}
       />
 
       <PlayerGrid
@@ -162,6 +167,12 @@ export default function Room() {
         flipped={flipped}
         onKick={requestKick}
         onTransfer={requestTransfer}
+      />
+
+      <VoteSummary
+        flipped={flipped}
+        players={players}
+        votingDeck={votingDeck}
       />
 
       {!isWatching && (
@@ -184,6 +195,12 @@ export default function Room() {
           />
         </>
       )}
+
+      <RoundHistory
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={snapshot?.history ?? []}
+      />
 
       {modal && (
         <ConfirmModal

@@ -1,4 +1,4 @@
-import { CopyIcon, LogOutIcon, LoadingIcon } from './Icons'
+import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon } from './Icons'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
@@ -6,8 +6,10 @@ interface RoomHeaderProps {
   roomName: string
   status: ConnectionStatus
   leaveLoading: boolean
+  historyCount: number
   onCopyLink: () => void
   onLeave: () => void
+  onOpenHistory: () => void
 }
 
 const STATUS_CONFIG = {
@@ -17,7 +19,7 @@ const STATUS_CONFIG = {
   disconnected: { className: 'tag-error', label: 'Desconectado' },
 } as const
 
-export default function RoomHeader({ roomName, status, leaveLoading, onCopyLink, onLeave }: RoomHeaderProps) {
+export default function RoomHeader({ roomName, status, leaveLoading, historyCount, onCopyLink, onLeave, onOpenHistory }: RoomHeaderProps) {
   const statusInfo = STATUS_CONFIG[status]
 
   return (
@@ -27,6 +29,10 @@ export default function RoomHeader({ roomName, status, leaveLoading, onCopyLink,
         <span className={`status-tag ${statusInfo.className}`}>{statusInfo.label}</span>
       </div>
       <div className="room-header-right">
+        <button className="btn-icon" onClick={onOpenHistory} title="Histórico de rodadas">
+          <HistoryIcon />
+          {historyCount > 0 && <span className="btn-icon-badge">{historyCount}</span>}
+        </button>
         <button className="btn-outlined primary" onClick={onCopyLink}>
           <CopyIcon /> Convidar
         </button>
