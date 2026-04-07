@@ -1,8 +1,12 @@
+import { ConnectionProvider } from './contexts/ConnectionContext'
+
 function App() {
   return (
-    <div className="app">
-      <h1>Planning Poker</h1>
-    </div>
+    <ConnectionProvider>
+      <div className="app">
+        <h1>Planning Poker</h1>
+      </div>
+    </ConnectionProvider>
   )
 }
 
