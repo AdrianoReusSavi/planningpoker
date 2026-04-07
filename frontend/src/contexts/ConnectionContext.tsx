@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { HubConnectionState, type HubConnection } from '@microsoft/signalr'
 import { getConnection, startConnection } from '../services/signalr'
 
@@ -6,6 +6,7 @@ type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnec
 
 interface ConnectionContextValue {
   connection: HubConnection
+  connected: boolean
   status: ConnectionStatus
 }
 
@@ -14,25 +15,25 @@ const ConnectionContext = createContext<ConnectionContextValue | null>(null)
 export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>('connecting')
   const connection = getConnection()
+  const started = useRef(false)
 
   useEffect(() => {
     connection.onreconnecting(() => setStatus('reconnecting'))
     connection.onreconnected(() => setStatus('connected'))
     connection.onclose(() => setStatus('disconnected'))
 
-    startConnection()
-      .then(() => setStatus('connected'))
-      .catch(() => setStatus('disconnected'))
-
-    return () => {
-      if (connection.state !== HubConnectionState.Disconnected) {
-        connection.stop()
-      }
+    if (!started.current) {
+      started.current = true
+      startConnection()
+        .then(() => setStatus('connected'))
+        .catch(() => setStatus('disconnected'))
+    } else if (connection.state === HubConnectionState.Connected) {
+      setStatus('connected')
     }
   }, [connection])
 
   return (
-    <ConnectionContext.Provider value={{ connection, status }}>
+    <ConnectionContext.Provider value={{ connection, connected: status === 'connected', status }}>
       {children}
     </ConnectionContext.Provider>
   )

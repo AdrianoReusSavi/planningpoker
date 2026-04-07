@@ -39,6 +39,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseRouting();
 app.UseCors("AllowFrontend");
 
 app.MapHub<PlanningHub>("/planningHub");

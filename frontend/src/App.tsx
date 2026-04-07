@@ -1,13 +1,16 @@
 import { ConnectionProvider } from './contexts/ConnectionContext'
+import { RoomProvider } from './contexts/RoomContext'
+import { ToastProvider } from './contexts/ToastContext'
+import Home from './pages/Home'
 
-function App() {
+export default function App() {
   return (
     <ConnectionProvider>
-      <div className="app">
-        <h1>Planning Poker</h1>
-      </div>
+      <RoomProvider>
+        <ToastProvider>
+          <Home />
+        </ToastProvider>
+      </RoomProvider>
     </ConnectionProvider>
   )
 }
-
-export default App

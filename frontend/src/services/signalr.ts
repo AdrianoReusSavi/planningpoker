@@ -1,6 +1,10 @@
 import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 
-const HUB_URL = import.meta.env.VITE_HUB_URL ?? 'http://localhost:5000/planningHub'
+const HUB_URL = import.meta.env.VITE_HUB_URL
+
+if (!HUB_URL) {
+  throw new Error('VITE_HUB_URL is not configured. Set it in .env file.')
+}
 
 let connection: HubConnection | null = null
 
