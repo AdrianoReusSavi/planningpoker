@@ -1,5 +1,6 @@
 using PlanningPoker.Domain.Enums;
 using PlanningPoker.Domain.Snapshots;
+using PlanningPoker.Domain.ValueObjects;
 
 namespace PlanningPoker.Domain.Entities;
 
@@ -14,9 +15,13 @@ public class Room
     public EstimationOptions VotingDeck { get; set; }
     public RoomPhase Phase { get; private set; } = RoomPhase.Waiting;
 
+    private readonly List<RoundRecord> _history = [];
+    private int _roundNumber = 1;
+
     public const int MaxPlayersPerRoom = 50;
     public const int MaxNameLength = 50;
     public const int MaxRoomNameLength = 30;
+    public const int MaxVoteLength = 10;
 
     public void StartVoting()
     {
@@ -25,6 +30,59 @@ public class Room
         {
             if (Phase != RoomPhase.Waiting)
                 throw new InvalidOperationException($"Cannot start voting from phase {Phase}.");
+            Phase = RoomPhase.Voting;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void SubmitVote(string playerId, string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        if (value.Length > MaxVoteLength)
+            throw new ArgumentException("Vote value too long.");
+
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Phase != RoomPhase.Voting)
+                throw new InvalidOperationException("Votes can only be submitted during VOTING phase.");
+
+            var user = Users.FirstOrDefault(u => u.PlayerId == playerId)
+                ?? throw new InvalidOperationException("Player not found in room.");
+
+            user.Vote = value.Trim();
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void Reveal()
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Phase != RoomPhase.Voting)
+                throw new InvalidOperationException($"Cannot reveal from phase {Phase}.");
+
+            var votes = Users
+                .Where(u => u.Vote is not null)
+                .ToDictionary(u => u.Username, u => u.Vote!);
+
+            _history.Add(new RoundRecord(_roundNumber, votes, DateTime.UtcNow));
+            _roundNumber++;
+
+            Phase = RoomPhase.Revealed;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void Reset()
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Phase != RoomPhase.Revealed)
+                throw new InvalidOperationException($"Cannot reset from phase {Phase}.");
+            Users.ForEach(u => u.Vote = null);
             Phase = RoomPhase.Voting;
         }
         finally { _lock.ExitWriteLock(); }
@@ -149,15 +207,26 @@ public class Room
                 .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, u.Vote is not null, u.Connected))
                 .ToList();
 
+            var votes = Phase == RoomPhase.Revealed
+                ? Users
+                    .Where(u => u.Vote is not null)
+                    .ToDictionary(u => u.PlayerId, u => u.Vote!)
+                : EmptyVotes;
+
             return new RoomSnapshot(
                 RoomId,
                 OwnerId,
                 RoomName,
                 VotingDeck.ToString(),
                 Phase.ToString().ToUpperInvariant(),
-                players
+                players,
+                votes,
+                _history.ToList()
             );
         }
         finally { _lock.ExitReadLock(); }
     }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyVotes =
+        new Dictionary<string, string>().AsReadOnly();
 }

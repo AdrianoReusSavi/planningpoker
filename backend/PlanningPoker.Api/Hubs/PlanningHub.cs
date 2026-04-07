@@ -11,6 +11,8 @@ public class PlanningHub(
     ILogger<PlanningHub> logger) : Hub
 {
     private static readonly ConcurrentDictionary<string, CancellationTokenSource> DisconnectTimers = new();
+    private static readonly ConcurrentDictionary<string, DateTime> LastActionTime = new();
+    private static readonly TimeSpan ActionCooldown = TimeSpan.FromMilliseconds(200);
     private const int DisconnectTimeoutSeconds = 20;
 
     public async Task Ping()
@@ -70,11 +72,39 @@ public class PlanningHub(
             await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
     }
 
+    public async Task SubmitVote(string roomId, string vote)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.SubmitVote(roomId, vote, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task RevealVotes(string roomId)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.RevealVotes(roomId, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task ResetVotes(string roomId)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.ResetVotes(roomId, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
     public async Task KickPlayer(string roomId, string targetPlayerId)
     {
         var result = roomService.KickPlayer(roomId, targetPlayerId, Context.ConnectionId);
         if (result is null) return;
 
+        LastActionTime.TryRemove(result.TargetConnectionId, out _);
         CancelDisconnectTimer(targetPlayerId);
         await Groups.RemoveFromGroupAsync(result.TargetConnectionId, roomId);
         await Clients.Client(result.TargetConnectionId).SendAsync("KICKED");
@@ -89,6 +119,7 @@ public class PlanningHub(
         if (result.PlayerId is not null)
             CancelDisconnectTimer(result.PlayerId);
 
+        LastActionTime.TryRemove(Context.ConnectionId, out _);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
 
         if (result.Snapshot is not null)
@@ -97,6 +128,8 @@ public class PlanningHub(
 
     public override async Task OnDisconnectedAsync(Exception? ex)
     {
+        LastActionTime.TryRemove(Context.ConnectionId, out _);
+
         var result = roomService.HandleDisconnect(Context.ConnectionId);
         if (result is not null)
         {
@@ -105,6 +138,16 @@ public class PlanningHub(
         }
 
         await base.OnDisconnectedAsync(ex);
+    }
+
+    private bool IsActionAllowed()
+    {
+        var now = DateTime.UtcNow;
+        var connId = Context.ConnectionId;
+        if (LastActionTime.TryGetValue(connId, out var last) && now - last < ActionCooldown)
+            return false;
+        LastActionTime[connId] = now;
+        return true;
     }
 
     private static void CancelDisconnectTimer(string playerId)

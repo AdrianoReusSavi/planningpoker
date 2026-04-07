@@ -12,6 +12,9 @@ public interface IRoomService
     ReconnectResult? Reconnect(string roomId, string playerId, string connectionId);
     RoomSnapshot? GetRoomSettings(string connectionId);
     RoomSnapshot? TransferOwnership(string roomId, string targetPlayerId, string connectionId);
+    RoomSnapshot? SubmitVote(string roomId, string vote, string connectionId);
+    RoomSnapshot? RevealVotes(string roomId, string connectionId);
+    RoomSnapshot? ResetVotes(string roomId, string connectionId);
     KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId);
     LeaveResult? LeaveRoom(string roomId, string connectionId);
     DisconnectResult? HandleDisconnect(string connectionId);

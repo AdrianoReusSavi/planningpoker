@@ -116,6 +116,69 @@ public class RoomService(IRoomRepository repository) : IRoomService
         catch (InvalidOperationException) { return null; }
     }
 
+    public RoomSnapshot? SubmitVote(string roomId, string vote, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(vote) || vote.Length > Room.MaxVoteLength)
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null)
+            return null;
+
+        try
+        {
+            room.SubmitVote(user.PlayerId, vote);
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? RevealVotes(string roomId, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null || room.OwnerId != user.PlayerId)
+            return null;
+
+        try
+        {
+            room.Reveal();
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? ResetVotes(string roomId, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null || room.OwnerId != user.PlayerId)
+            return null;
+
+        try
+        {
+            room.Reset();
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
     public KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(targetPlayerId))
