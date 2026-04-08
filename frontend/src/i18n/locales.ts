@@ -50,6 +50,11 @@ const locales = {
     'modal.transfer.confirm': 'Transferir',
     'modal.cancel': 'Cancelar',
 
+    // Break
+    'break.title': 'Pausa solicitada',
+    'break.message': '{name} pediu uma pausa para café.',
+    'break.button': 'Pedir pausa',
+
     // History
     'history.title': 'Histórico de rodadas',
     'history.empty': 'Nenhuma rodada finalizada ainda.',
@@ -124,6 +129,10 @@ const locales = {
     'modal.transfer.confirm': 'Transfer',
     'modal.cancel': 'Cancel',
 
+    'break.title': 'Break requested',
+    'break.message': '{name} requested a coffee break.',
+    'break.button': 'Request break',
+
     'history.title': 'Round history',
     'history.empty': 'No rounds completed yet.',
     'history.round': 'Round',
@@ -193,6 +202,10 @@ const locales = {
     'modal.transfer.message': '¿Transferir liderazgo a {name}? Perderás los controles de líder.',
     'modal.transfer.confirm': 'Transferir',
     'modal.cancel': 'Cancelar',
+
+    'break.title': 'Pausa solicitada',
+    'break.message': '{name} pidió una pausa para café.',
+    'break.button': 'Pedir pausa',
 
     'history.title': 'Historial de rondas',
     'history.empty': 'Ninguna ronda finalizada aún.',

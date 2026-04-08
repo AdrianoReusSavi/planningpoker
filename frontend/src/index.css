@@ -1170,6 +1170,65 @@ body {
   background: #dc2626;
 }
 
+/* ── Voting Area ── */
+
+.voting-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+
+.btn-break {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-break:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* ── Fireworks ── */
+
+.fireworks {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  z-index: 50;
+}
+
+.particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  animation: explodeParticle 2s ease-out forwards;
+  clip-path: polygon(
+    50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%,
+    50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%
+  );
+}
+
+@keyframes explodeParticle {
+  0% { transform: rotate(var(--dz)) translate(0, 0); opacity: 1; }
+  100% { transform: rotate(var(--dz)) translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
 /* ── Icons ── */
 
 .icon-spin {

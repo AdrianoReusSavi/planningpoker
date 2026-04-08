@@ -12,7 +12,9 @@ import VoteSummary from './VoteSummary'
 import VotingControls from './VotingControls'
 import VotingDeck from './VotingDeck'
 import RoundHistory from './RoundHistory'
+import Fireworks from './Fireworks'
 import ConfirmModal from './ConfirmModal'
+import { CoffeeIcon } from './Icons'
 
 interface ModalState {
   title: string
@@ -54,6 +56,17 @@ export default function Room() {
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
+  const votedPlayers = players.filter(u => u.vote)
+  const showFireworks = flipped && allVoted && votedPlayers.length > 1 && votedPlayers.every(u => u.vote === votedPlayers[0].vote)
+
+  useEffect(() => {
+    if (!connection) return
+    const handleBreak = (username: string) => {
+      showToast(t('break.message', { name: username }), 'warning')
+    }
+    connection.on('BREAK_REQUESTED', handleBreak)
+    return () => { connection.off('BREAK_REQUESTED', handleBreak) }
+  }, [connection, showToast, t])
 
   const postRef = useRef<(data: unknown) => void>(() => {})
   const postToMini = useBroadcastChannel('planning-poker-sync', useCallback((data: Record<string, unknown>) => {
@@ -177,6 +190,11 @@ export default function Room() {
     showToast(t('room.linkCopied'))
   }
 
+  const requestBreak = useCallback(async () => {
+    if (!roomId) return
+    try { await actions.requestBreak(roomId) } catch { /* rate limited */ }
+  }, [actions, roomId])
+
   const openMiniView = () => {
     window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
   }
@@ -193,6 +211,8 @@ export default function Room() {
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenMiniView={openMiniView}
       />
+
+      {showFireworks && <Fireworks />}
 
       <PlayerGrid
         players={players}
@@ -225,12 +245,17 @@ export default function Room() {
             />
           )}
           {!miniViewOpen && (
-            <VotingDeck
-              cards={votingDeck}
-              selectedVote={vote}
-              onVote={submitVote}
-              disabled={flipped}
-            />
+            <div className="voting-area">
+              <VotingDeck
+                cards={votingDeck}
+                selectedVote={vote}
+                onVote={submitVote}
+                disabled={flipped}
+              />
+              <button className="btn-break" onClick={requestBreak} title={t('break.button')}>
+                <CoffeeIcon /> {t('break.button')}
+              </button>
+            </div>
           )}
         </>
       )}

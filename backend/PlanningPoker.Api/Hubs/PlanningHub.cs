@@ -111,6 +111,15 @@ public class PlanningHub(
         await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
     }
 
+    public async Task RequestBreak(string roomId)
+    {
+        if (!IsActionAllowed()) return;
+
+        var result = roomService.ValidateBreakRequest(roomId, Context.ConnectionId);
+        if (result is not null)
+            await Clients.Group(result.RoomId).SendAsync("BREAK_REQUESTED", result.Username);
+    }
+
     public async Task LeaveRoom(string roomId)
     {
         var result = roomService.LeaveRoom(roomId, Context.ConnectionId);
