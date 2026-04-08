@@ -1,3 +1,4 @@
+import { useI18n } from '../contexts/I18nContext'
 import type { PlayerView } from './PlayerGrid'
 
 interface VoteSummaryProps {
@@ -7,6 +8,7 @@ interface VoteSummaryProps {
 }
 
 export default function VoteSummary({ flipped, players, votingDeck }: VoteSummaryProps) {
+  const { t } = useI18n()
   const hasVotes = players.some(p => p.vote)
 
   if (!flipped || !hasVotes) {
@@ -25,8 +27,8 @@ export default function VoteSummary({ flipped, players, votingDeck }: VoteSummar
 
     return (
       <div className="vote-summary">
-        <span className="vote-summary-main">Média aproximada: {closest}</span>
-        <span className="vote-summary-detail">Média exata: {mean.toFixed(2)}</span>
+        <span className="vote-summary-main">{t('summary.approxMean')}: {closest}</span>
+        <span className="vote-summary-detail">{t('summary.exactMean')}: {mean.toFixed(2)}</span>
       </div>
     )
   }
@@ -45,11 +47,11 @@ export default function VoteSummary({ flipped, players, votingDeck }: VoteSummar
       <div className="vote-summary">
         {!allTied ? (
           <>
-            <span className="vote-summary-main">Mais votado: {mostVoted[0]}</span>
-            <span className="vote-summary-detail">Valor central: {median}</span>
+            <span className="vote-summary-main">{t('summary.mostVoted')}: {mostVoted[0]}</span>
+            <span className="vote-summary-detail">{t('summary.median')}: {median}</span>
           </>
         ) : (
-          <span className="vote-summary-main">Valor central: {median}</span>
+          <span className="vote-summary-main">{t('summary.median')}: {median}</span>
         )}
       </div>
     )

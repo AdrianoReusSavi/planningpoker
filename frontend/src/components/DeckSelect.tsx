@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../contexts/I18nContext'
 import estimationOptions from '../constants/estimationOptions'
 
 interface DeckSelectProps {
@@ -7,6 +8,7 @@ interface DeckSelectProps {
 }
 
 export default function DeckSelect({ value, onChange }: DeckSelectProps) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -29,7 +31,7 @@ export default function DeckSelect({ value, onChange }: DeckSelectProps) {
         className="deck-select-trigger"
         onClick={() => setOpen(!open)}
       >
-        <span>{selected?.label}</span>
+        <span>{selected ? t(selected.translationKey) : ''}</span>
         <span className="deck-select-arrow">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -43,7 +45,7 @@ export default function DeckSelect({ value, onChange }: DeckSelectProps) {
                 setOpen(false)
               }}
             >
-              <span className="deck-option-label">{opt.label}</span>
+              <span className="deck-option-label">{t(opt.translationKey)}</span>
               <span className="deck-option-desc">{opt.desc}</span>
             </li>
           ))}

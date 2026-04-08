@@ -4,6 +4,7 @@ import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useBroadcastChannel } from '../hooks/useBroadcastChannel'
 import { useToast } from '../contexts/ToastContext'
+import { useI18n } from '../contexts/I18nContext'
 import { getDeckByKey } from '../constants/estimationOptions'
 import RoomHeader from './RoomHeader'
 import PlayerGrid, { type PlayerView } from './PlayerGrid'
@@ -26,6 +27,7 @@ export default function Room() {
   const { snapshot, playerId, isWatching, clearRoom } = useRoom()
   const actions = useRoomActions(connection, connected)
   const { showToast } = useToast()
+  const { t } = useI18n()
   const [vote, setVote] = useState('')
   const [modal, setModal] = useState<ModalState | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -89,7 +91,7 @@ export default function Room() {
     try {
       await actions.submitVote(roomId, value)
     } catch {
-      showToast('Falha ao enviar voto.', 'error')
+      showToast(t('room.voteError'), 'error')
       setVote('')
     }
   }
@@ -99,7 +101,7 @@ export default function Room() {
     try {
       await actions.revealVotes(roomId)
     } catch {
-      showToast('Falha ao revelar votos.', 'error')
+      showToast(t('room.revealError'), 'error')
     } finally {
       setRevealLoading(false)
     }
@@ -110,7 +112,7 @@ export default function Room() {
     try {
       await actions.resetVotes(roomId)
     } catch {
-      showToast('Falha ao resetar votos.', 'error')
+      showToast(t('room.resetError'), 'error')
     } finally {
       setResetLoading(false)
     }
@@ -118,9 +120,9 @@ export default function Room() {
 
   const requestLeave = () => {
     setModal({
-      title: 'Sair da sala',
-      message: 'Tem certeza que deseja sair? Você será removido da votação.',
-      confirmText: 'Sair',
+      title: t('modal.leave.title'),
+      message: t('modal.leave.message'),
+      confirmText: t('modal.leave.confirm'),
       danger: true,
       onConfirm: async () => {
         setModal(null)
@@ -137,16 +139,16 @@ export default function Room() {
   const requestKick = (targetId: string) => {
     const target = players.find(u => u.id === targetId)
     setModal({
-      title: 'Remover participante',
-      message: `Tem certeza que deseja remover ${target?.username ?? 'este participante'} da sala?`,
-      confirmText: 'Remover',
+      title: t('modal.kick.title'),
+      message: t('modal.kick.message', { name: target?.username ?? '' }),
+      confirmText: t('modal.kick.confirm'),
       danger: true,
       onConfirm: async () => {
         setModal(null)
         try {
           await actions.kickPlayer(roomId, targetId)
         } catch {
-          showToast('Falha ao remover participante.', 'error')
+          showToast(t('room.kickError'), 'error')
         }
       },
     })
@@ -155,15 +157,15 @@ export default function Room() {
   const requestTransfer = (targetId: string) => {
     const target = players.find(u => u.id === targetId)
     setModal({
-      title: 'Transferir liderança',
-      message: `Transferir liderança para ${target?.username ?? 'este participante'}? Você perderá os controles de líder.`,
-      confirmText: 'Transferir',
+      title: t('modal.transfer.title'),
+      message: t('modal.transfer.message', { name: target?.username ?? '' }),
+      confirmText: t('modal.transfer.confirm'),
       onConfirm: async () => {
         setModal(null)
         try {
           await actions.transferOwnership(roomId, targetId)
         } catch {
-          showToast('Falha ao transferir liderança.', 'error')
+          showToast(t('room.transferError'), 'error')
         }
       },
     })
@@ -172,7 +174,7 @@ export default function Room() {
   const copyLink = () => {
     const url = `${window.location.origin}?roomId=${encodeURIComponent(roomId)}`
     navigator.clipboard.writeText(url)
-    showToast('Link copiado com sucesso!')
+    showToast(t('room.linkCopied'))
   }
 
   const openMiniView = () => {

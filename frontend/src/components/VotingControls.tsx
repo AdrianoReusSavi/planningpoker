@@ -1,3 +1,4 @@
+import { useI18n } from '../contexts/I18nContext'
 import { EyeIcon, RefreshIcon, LoadingIcon } from './Icons'
 
 interface VotingControlsProps {
@@ -12,6 +13,8 @@ interface VotingControlsProps {
 }
 
 export default function VotingControls({ isLeader, flipped, allVoted, someVoted, revealLoading, resetLoading, onReveal, onReset }: VotingControlsProps) {
+  const { t } = useI18n()
+
   if (!isLeader) return null
 
   return (
@@ -23,7 +26,7 @@ export default function VotingControls({ isLeader, flipped, allVoted, someVoted,
           disabled={!someVoted || revealLoading}
         >
           {revealLoading ? <LoadingIcon /> : <EyeIcon />}
-          {allVoted ? ' Revelar votos' : ' Revelar votos parcial'}
+          {allVoted ? ` ${t('room.revealAll')}` : ` ${t('room.revealPartial')}`}
         </button>
       ) : (
         <button
@@ -32,7 +35,7 @@ export default function VotingControls({ isLeader, flipped, allVoted, someVoted,
           disabled={resetLoading}
         >
           {resetLoading ? <LoadingIcon /> : <RefreshIcon />}
-          {' '}Resetar votos
+          {` ${t('room.reset')}`}
         </button>
       )}
     </div>

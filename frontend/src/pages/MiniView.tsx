@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RoomSnapshot } from '../types/room'
 import { useBroadcastChannel } from '../hooks/useBroadcastChannel'
+import { useI18n } from '../contexts/I18nContext'
 import { getDeckByKey } from '../constants/estimationOptions'
 import VoteSummary from '../components/VoteSummary'
 import VotingControls from '../components/VotingControls'
@@ -8,6 +9,7 @@ import VotingDeck from '../components/VotingDeck'
 import type { PlayerView } from '../components/PlayerGrid'
 
 export default function MiniView() {
+  const { t } = useI18n()
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [vote, setVote] = useState('')
@@ -67,9 +69,9 @@ export default function MiniView() {
   if (!snapshot) {
     return (
       <div className="mini-view-loading">
-        Aguardando conexão com a sala principal...
+        {t('mini.waiting')}
         <br />
-        Mantenha a aba principal aberta.
+        {t('mini.keepOpen')}
       </div>
     )
   }
@@ -79,9 +81,9 @@ export default function MiniView() {
       <div className="mini-view-header">
         <span className="mini-view-room">{snapshot.roomName}</span>
         <span className={`status-tag ${flipped ? 'tag-accent' : 'tag-info'}`}>
-          {flipped ? 'Revelado' : 'Votando'}
+          {flipped ? t('mini.revealed') : t('mini.voting')}
         </span>
-        <span className="status-tag tag-default">{votedCount}/{players.length} votaram</span>
+        <span className="status-tag tag-default">{votedCount}/{players.length} {t('mini.voted')}</span>
       </div>
 
       <VoteSummary

@@ -4,6 +4,7 @@ import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useUsername } from '../hooks/useUsername'
 import { useToast } from '../contexts/ToastContext'
+import { useI18n } from '../contexts/I18nContext'
 import { LoadingIcon } from './Icons'
 
 interface EnterRoomProps {
@@ -16,6 +17,7 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
   const { setPlayerId } = useRoom()
   const { enterRoom } = useRoomActions(connection, connected)
   const { showToast } = useToast()
+  const { t } = useI18n()
   const [username, setUsername] = useUsername()
   const [loading, setLoading] = useState(false)
 
@@ -27,10 +29,10 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
       if (playerId) {
         setPlayerId(playerId)
       } else {
-        showToast('Sala não encontrada. Verifique o link.', 'error')
+        showToast(t('enter.notFound'), 'error')
       }
     } catch {
-      showToast('Erro de conexão. Verifique sua internet.', 'error')
+      showToast(t('enter.connectionError'), 'error')
     } finally {
       setLoading(false)
     }
@@ -40,7 +42,7 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
     <div className="form-panel">
       <input
         type="text"
-        placeholder="Seu nome"
+        placeholder={t('enter.name')}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && handleEnter()}
@@ -52,10 +54,10 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
           onClick={handleEnter}
           disabled={!username.trim() || !roomId || !connected || loading}
         >
-          {loading && <LoadingIcon />} {loading ? 'Entrando...' : 'Entrar'}
+          {loading && <LoadingIcon />} {loading ? t('enter.loading') : t('enter.submit')}
         </button>
         <button className="secondary" onClick={onGoToCreate}>
-          Criar nova sala
+          {t('enter.create')}
         </button>
       </div>
     </div>

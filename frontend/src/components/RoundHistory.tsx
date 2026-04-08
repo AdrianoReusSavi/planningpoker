@@ -1,3 +1,4 @@
+import { useI18n } from '../contexts/I18nContext'
 import type { RoundRecord } from '../types/room'
 
 interface RoundHistoryProps {
@@ -7,18 +8,20 @@ interface RoundHistoryProps {
 }
 
 export default function RoundHistory({ open, onClose, history }: RoundHistoryProps) {
+  const { t } = useI18n()
+
   if (!open) return null
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
-          <h3>Histórico de rodadas</h3>
+          <h3>{t('history.title')}</h3>
           <button className="drawer-close" onClick={onClose}>✕</button>
         </div>
         <div className="drawer-content">
           {history.length === 0 ? (
-            <p className="drawer-empty">Nenhuma rodada finalizada ainda.</p>
+            <p className="drawer-empty">{t('history.empty')}</p>
           ) : (
             [...history].reverse().map(round => {
               const entries = Object.entries(round.votes)
@@ -30,14 +33,14 @@ export default function RoundHistory({ open, onClose, history }: RoundHistoryPro
               return (
                 <div key={round.round} className="round-card">
                   <div className="round-card-header">
-                    <strong>Rodada {round.round}</strong>
-                    {mean && <span className="round-mean">Média: {mean}</span>}
+                    <strong>{t('history.round')} {round.round}</strong>
+                    {mean && <span className="round-mean">{t('history.mean')}: {mean}</span>}
                   </div>
                   <table className="round-table">
                     <thead>
                       <tr>
-                        <th>Jogador</th>
-                        <th>Voto</th>
+                        <th>{t('history.player')}</th>
+                        <th>{t('history.vote')}</th>
                       </tr>
                     </thead>
                     <tbody>
