@@ -58,8 +58,13 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
-  const requestBreak = useCallback(
-    (roomId: string) => invoke<void>('RequestBreak', roomId),
+  const toggleBreakRequest = useCallback(
+    (roomId: string) => invoke<void>('ToggleBreakRequest', roomId),
+    [invoke],
+  )
+
+  const clearBreakRequests = useCallback(
+    (roomId: string) => invoke<void>('ClearBreakRequests', roomId),
     [invoke],
   )
 
@@ -72,7 +77,8 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     resetVotes,
     leaveRoom,
     kickPlayer,
-    requestBreak,
+    toggleBreakRequest,
+    clearBreakRequests,
     transferOwnership,
   }
 }

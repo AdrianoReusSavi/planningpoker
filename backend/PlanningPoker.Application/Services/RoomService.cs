@@ -206,7 +206,7 @@ public class RoomService(IRoomRepository repository) : IRoomService
         return new KickResult(roomId, targetConnectionId, room.ToSnapshot());
     }
 
-    public BreakResult? ValidateBreakRequest(string roomId, string connectionId)
+    public RoomSnapshot? ToggleBreakRequest(string roomId, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId))
             return null;
@@ -219,7 +219,29 @@ public class RoomService(IRoomRepository repository) : IRoomService
         if (user is null)
             return null;
 
-        return new BreakResult(roomId, user.Username);
+        try
+        {
+            room.ToggleBreakRequest(user.PlayerId);
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? ClearBreakRequests(string roomId, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var caller = room.FindByConnectionId(connectionId);
+        if (caller is null || room.OwnerId != caller.PlayerId)
+            return null;
+
+        room.ClearBreakRequests();
+        return room.ToSnapshot();
     }
 
     public LeaveResult? LeaveRoom(string roomId, string connectionId)

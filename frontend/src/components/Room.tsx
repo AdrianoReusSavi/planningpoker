@@ -15,6 +15,7 @@ import RoundHistory from './RoundHistory'
 import Fireworks from './Fireworks'
 import ConfirmModal from './ConfirmModal'
 import ConnectionBanner from './ConnectionBanner'
+import BreakRequestBanner from './BreakRequestBanner'
 import { CoffeeIcon } from './Icons'
 
 interface ModalState {
@@ -60,14 +61,9 @@ export default function Room() {
   const votedPlayers = players.filter(u => u.vote)
   const showFireworks = flipped && allVoted && votedPlayers.length > 1 && votedPlayers.every(u => u.vote === votedPlayers[0].vote)
 
-  useEffect(() => {
-    if (!connection) return
-    const handleBreak = (username: string) => {
-      showToast(t('break.message', { name: username }), 'warning')
-    }
-    connection.on('BREAK_REQUESTED', handleBreak)
-    return () => { connection.off('BREAK_REQUESTED', handleBreak) }
-  }, [connection, showToast, t])
+  const breakRequesters = snapshot?.breakRequesters ?? []
+  const breakCount = breakRequesters.length
+  const hasActiveBreakRequest = playerId !== null && breakRequesters.includes(playerId)
 
   const postRef = useRef<(data: unknown) => void>(() => {})
   const postToMini = useBroadcastChannel('planning-poker-sync', useCallback((data: Record<string, unknown>) => {
@@ -191,9 +187,14 @@ export default function Room() {
     showToast(t('room.linkCopied'))
   }
 
-  const requestBreak = useCallback(async () => {
+  const toggleBreakRequest = useCallback(async () => {
     if (!roomId) return
-    try { await actions.requestBreak(roomId) } catch { /* rate limited */ }
+    try { await actions.toggleBreakRequest(roomId) } catch { /* rate limited */ }
+  }, [actions, roomId])
+
+  const clearBreakRequests = useCallback(async () => {
+    if (!roomId) return
+    try { await actions.clearBreakRequests(roomId) } catch { /* rate limited */ }
   }, [actions, roomId])
 
   const openMiniView = () => {
@@ -202,18 +203,27 @@ export default function Room() {
 
   return (
     <div className="room">
-      <RoomHeader
-        roomName={snapshot?.roomName ?? ''}
-        status={status}
-        leaveLoading={leaveLoading}
-        historyCount={snapshot?.history?.length ?? 0}
-        onCopyLink={copyLink}
-        onLeave={requestLeave}
-        onOpenHistory={() => setHistoryOpen(true)}
-        onOpenMiniView={openMiniView}
-      />
+      <div className="room-head">
+        <RoomHeader
+          roomName={snapshot?.roomName ?? ''}
+          status={status}
+          leaveLoading={leaveLoading}
+          historyCount={snapshot?.history?.length ?? 0}
+          onCopyLink={copyLink}
+          onLeave={requestLeave}
+          onOpenHistory={() => setHistoryOpen(true)}
+          onOpenMiniView={openMiniView}
+        />
 
-      <ConnectionBanner status={status} />
+        <div className="room-banners">
+          <ConnectionBanner status={status} />
+          <BreakRequestBanner
+            count={breakCount}
+            canClear={isLeader}
+            onClear={clearBreakRequests}
+          />
+        </div>
+      </div>
 
       {showFireworks && <Fireworks />}
 
@@ -255,8 +265,13 @@ export default function Room() {
                 onVote={submitVote}
                 disabled={flipped}
               />
-              <button className="btn-break" onClick={requestBreak} title={t('break.button')}>
-                <CoffeeIcon /> {t('break.button')}
+              <button
+                className={`btn-break ${hasActiveBreakRequest ? 'active' : ''}`}
+                onClick={toggleBreakRequest}
+                title={hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
+              >
+                <CoffeeIcon />
+                {hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
               </button>
             </div>
           )}
