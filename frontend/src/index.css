@@ -502,6 +502,42 @@ body {
   background: var(--btn-danger-hover);
 }
 
+/* ── Connection Banner ── */
+
+.connection-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: bannerSlideDown 0.25s ease-out;
+}
+
+.connection-banner.warning {
+  background: var(--tag-warning-bg);
+  color: var(--tag-warning-text);
+  border-bottom: 1px solid var(--tag-warning-border);
+}
+
+.connection-banner.error {
+  background: var(--tag-error-bg);
+  color: var(--tag-error-text);
+  border-bottom: 1px solid var(--tag-error-border);
+}
+
+@keyframes bannerSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ── User Group ── */
 
 .user-group {

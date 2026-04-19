@@ -14,6 +14,7 @@ import VotingDeck from './VotingDeck'
 import RoundHistory from './RoundHistory'
 import Fireworks from './Fireworks'
 import ConfirmModal from './ConfirmModal'
+import ConnectionBanner from './ConnectionBanner'
 import { CoffeeIcon } from './Icons'
 
 interface ModalState {
@@ -211,6 +212,8 @@ export default function Room() {
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenMiniView={openMiniView}
       />
+
+      <ConnectionBanner status={status} />
 
       {showFireworks && <Fireworks />}
 
