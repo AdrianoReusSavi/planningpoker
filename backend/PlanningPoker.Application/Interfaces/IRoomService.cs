@@ -16,7 +16,8 @@ public interface IRoomService
     RoomSnapshot? RevealVotes(string roomId, string connectionId);
     RoomSnapshot? ResetVotes(string roomId, string connectionId);
     KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId);
-    BreakResult? ValidateBreakRequest(string roomId, string connectionId);
+    RoomSnapshot? ToggleBreakRequest(string roomId, string connectionId);
+    RoomSnapshot? ClearBreakRequests(string roomId, string connectionId);
     LeaveResult? LeaveRoom(string roomId, string connectionId);
     DisconnectResult? HandleDisconnect(string connectionId);
     RemovalResult PermanentlyRemovePlayer(string roomId, string playerId);

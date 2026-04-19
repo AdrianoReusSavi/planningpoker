@@ -39,7 +39,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 - Vote summary with approximate and exact mean
 - Round history with per-round statistics
 - Kick player and transfer ownership
-- Break request notification
+- Anonymous coffee break counter with clear-all for the room owner
 - Celebration animation when all votes match
 - Mini-view popup for multi-monitor setups
 - Dark/Light mode
@@ -54,7 +54,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 │              │  <────────────────────────────>  │                  │
 │   Frontend   │         STATE_SYNC               │     Backend      │
 │  React 19    │         KICKED                   │    .NET 9        │
-│  TypeScript  │         BREAK_REQUESTED          │    SignalR Hub   │
+│  TypeScript  │                                  │    SignalR Hub   │
 │  Vite        │                                  │    Clean Arch    │
 │              │                                  │                  │
 └──────────────┘                                  └──────────────────┘
@@ -67,7 +67,7 @@ PlanningPoker.Api            -> SignalR Hub, Program.cs
 PlanningPoker.Application    -> Services, Interfaces, Results
 PlanningPoker.Domain         -> Entities, Enums, Snapshots, ValueObjects
 PlanningPoker.Infrastructure -> InMemoryRoomRepository
-PlanningPoker.Tests          -> xUnit (35 tests)
+PlanningPoker.Tests          -> xUnit (41 tests)
 ```
 
 **Frontend:**

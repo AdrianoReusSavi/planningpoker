@@ -380,6 +380,26 @@ body {
   overflow: hidden;
 }
 
+.room-head {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 20;
+}
+
+.room-banners {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.room-banners > * {
+  pointer-events: auto;
+}
+
 /* ── Header ── */
 
 .room-header {
@@ -715,12 +735,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0;
+  justify-content: center;
+  height: 60px;
+  flex: 0 0 auto;
   gap: 2px;
-}
-
-.vote-summary.placeholder {
-  height: 52px;
 }
 
 .vote-summary-main {
@@ -1228,12 +1246,71 @@ body {
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn-break:hover {
   background: var(--bg-secondary);
   color: var(--text-primary);
+}
+
+.btn-break.active {
+  background: var(--tag-warning-bg);
+  color: var(--tag-warning-text);
+  border-color: var(--tag-warning-border);
+}
+
+/* ── Break Request Banner ── */
+
+.break-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--tag-warning-bg);
+  color: var(--tag-warning-text);
+  border-bottom: 1px solid var(--tag-warning-border);
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: breakBannerPulse 0.4s ease-out;
+}
+
+.break-banner-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.break-banner-clear {
+  padding: 4px 12px;
+  border: 1px solid var(--tag-warning-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tag-warning-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.break-banner-clear:hover {
+  background: var(--tag-warning-border);
+}
+
+@keyframes breakBannerPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Fireworks ── */

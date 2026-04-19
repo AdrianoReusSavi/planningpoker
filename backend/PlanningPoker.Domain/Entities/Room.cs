@@ -16,6 +16,7 @@ public class Room
     public RoomPhase Phase { get; private set; } = RoomPhase.Waiting;
 
     private readonly List<RoundRecord> _history = [];
+    private readonly HashSet<string> _breakRequesters = [];
     private int _roundNumber = 1;
 
     public const int MaxPlayersPerRoom = 50;
@@ -108,8 +109,31 @@ public class Room
             var user = Users.FirstOrDefault(u => u.PlayerId == playerId);
             if (user is null) return false;
             Users.Remove(user);
+            _breakRequesters.Remove(playerId);
             return true;
         }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public bool ToggleBreakRequest(string playerId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            if (!Users.Any(u => u.PlayerId == playerId))
+                throw new InvalidOperationException("Player not found in room.");
+
+            if (_breakRequesters.Add(playerId)) return true;
+            _breakRequesters.Remove(playerId);
+            return false;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void ClearBreakRequests()
+    {
+        _lock.EnterWriteLock();
+        try { _breakRequesters.Clear(); }
         finally { _lock.ExitWriteLock(); }
     }
 
@@ -221,7 +245,8 @@ public class Room
                 Phase.ToString().ToUpperInvariant(),
                 players,
                 votes,
-                _history.ToList()
+                _history.ToList(),
+                _breakRequesters.ToList()
             );
         }
         finally { _lock.ExitReadLock(); }

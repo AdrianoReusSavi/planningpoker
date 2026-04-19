@@ -10,5 +10,6 @@ public record RoomSnapshot(
     string Phase,
     IReadOnlyList<PlayerSnapshot> Players,
     IReadOnlyDictionary<string, string> Votes,
-    IReadOnlyList<RoundRecord> History
+    IReadOnlyList<RoundRecord> History,
+    IReadOnlyList<string> BreakRequesters
 );

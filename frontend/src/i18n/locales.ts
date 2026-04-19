@@ -55,9 +55,11 @@ const locales = {
     'modal.cancel': 'Cancelar',
 
     // Break
-    'break.title': 'Pausa solicitada',
-    'break.message': '{name} pediu uma pausa para café.',
     'break.button': 'Pedir pausa',
+    'break.buttonActive': 'Cancelar pedido',
+    'break.clear': 'Limpar pedidos',
+    'break.countOne': '1 pedido de pausa',
+    'break.countMany': '{count} pedidos de pausa',
 
     // History
     'history.title': 'Histórico de rodadas',
@@ -136,9 +138,11 @@ const locales = {
     'modal.transfer.confirm': 'Transfer',
     'modal.cancel': 'Cancel',
 
-    'break.title': 'Break requested',
-    'break.message': '{name} requested a coffee break.',
     'break.button': 'Request break',
+    'break.buttonActive': 'Cancel request',
+    'break.clear': 'Clear requests',
+    'break.countOne': '1 break request',
+    'break.countMany': '{count} break requests',
 
     'history.title': 'Round history',
     'history.empty': 'No rounds completed yet.',
@@ -213,9 +217,11 @@ const locales = {
     'modal.transfer.confirm': 'Transferir',
     'modal.cancel': 'Cancelar',
 
-    'break.title': 'Pausa solicitada',
-    'break.message': '{name} pidió una pausa para café.',
     'break.button': 'Pedir pausa',
+    'break.buttonActive': 'Cancelar pedido',
+    'break.clear': 'Limpiar pedidos',
+    'break.countOne': '1 pedido de pausa',
+    'break.countMany': '{count} pedidos de pausa',
 
     'history.title': 'Historial de rondas',
     'history.empty': 'Ninguna ronda finalizada aún.',

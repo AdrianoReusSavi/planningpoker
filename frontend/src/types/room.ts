@@ -20,4 +20,5 @@ export interface RoomSnapshot {
   players: PlayerSnapshot[]
   votes: Record<string, string>
   history: RoundRecord[]
+  breakRequesters: string[]
 }

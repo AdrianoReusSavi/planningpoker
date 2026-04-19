@@ -111,13 +111,22 @@ public class PlanningHub(
         await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
     }
 
-    public async Task RequestBreak(string roomId)
+    public async Task ToggleBreakRequest(string roomId)
     {
         if (!IsActionAllowed()) return;
 
-        var result = roomService.ValidateBreakRequest(roomId, Context.ConnectionId);
-        if (result is not null)
-            await Clients.Group(result.RoomId).SendAsync("BREAK_REQUESTED", result.Username);
+        var snapshot = roomService.ToggleBreakRequest(roomId, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
+    public async Task ClearBreakRequests(string roomId)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.ClearBreakRequests(roomId, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
     }
 
     public async Task LeaveRoom(string roomId)

@@ -383,6 +383,76 @@ public class RoomTests
 
     #endregion
 
+    #region Break Requests
+
+    [Fact]
+    public void ToggleBreakRequest_AddsRequester_OnFirstCall()
+    {
+        var room = CreateRoom();
+        var added = room.ToggleBreakRequest("owner");
+
+        Assert.True(added);
+        var snapshot = room.ToSnapshot();
+        Assert.Single(snapshot.BreakRequesters);
+        Assert.Contains("owner", snapshot.BreakRequesters);
+    }
+
+    [Fact]
+    public void ToggleBreakRequest_RemovesRequester_OnSecondCall()
+    {
+        var room = CreateRoom();
+        room.ToggleBreakRequest("owner");
+        var stillActive = room.ToggleBreakRequest("owner");
+
+        Assert.False(stillActive);
+        var snapshot = room.ToSnapshot();
+        Assert.Empty(snapshot.BreakRequesters);
+    }
+
+    [Fact]
+    public void ToggleBreakRequest_UnknownPlayer_Throws()
+    {
+        var room = CreateRoom();
+        Assert.Throws<InvalidOperationException>(() => room.ToggleBreakRequest("nonexistent"));
+    }
+
+    [Fact]
+    public void ToggleBreakRequest_MultiplePlayers_AccumulatesRequests()
+    {
+        var room = CreateRoom(3);
+        room.ToggleBreakRequest("owner");
+        room.ToggleBreakRequest("player-1");
+        room.ToggleBreakRequest("player-2");
+
+        var snapshot = room.ToSnapshot();
+        Assert.Equal(3, snapshot.BreakRequesters.Count);
+    }
+
+    [Fact]
+    public void ClearBreakRequests_RemovesAll()
+    {
+        var room = CreateRoom(3);
+        room.ToggleBreakRequest("owner");
+        room.ToggleBreakRequest("player-1");
+
+        room.ClearBreakRequests();
+
+        Assert.Empty(room.ToSnapshot().BreakRequesters);
+    }
+
+    [Fact]
+    public void RemoveUser_AlsoRemovesPendingBreakRequest()
+    {
+        var room = CreateRoom();
+        room.ToggleBreakRequest("player-1");
+
+        room.RemoveUser("player-1");
+
+        Assert.Empty(room.ToSnapshot().BreakRequesters);
+    }
+
+    #endregion
+
     #region Concurrency
 
     [Fact]
