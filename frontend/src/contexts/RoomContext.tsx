@@ -60,8 +60,6 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    if (snapshot) return
-
     const savedRoomId = localStorage.getItem('roomId')
     const savedPlayerId = localStorage.getItem('playerId')
 
@@ -79,7 +77,7 @@ export function RoomProvider({ children }: { children: ReactNode }) {
           clearRoom()
         })
     }
-  }, [connection, connected, snapshot, clearRoom, reconnect, setPlayerId])
+  }, [connection, connected, clearRoom, reconnect, setPlayerId])
 
   const isWatching = snapshot !== null && (
     playerId === null || !snapshot.players.some(p => p.id === playerId)
