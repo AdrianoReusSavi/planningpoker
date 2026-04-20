@@ -3,6 +3,9 @@ export interface PlayerSnapshot {
   name: string
   hasVoted: boolean
   connected: boolean
+  style: string | null
+  pattern: string | null
+  patternColor: string | null
 }
 
 export interface RoundRecord {

@@ -6,6 +6,9 @@ export interface PlayerView {
   hasVoted: boolean
   vote: string
   connected: boolean
+  style: string | null
+  pattern: string | null
+  patternColor: string | null
 }
 
 interface PlayerGridProps {
@@ -16,14 +19,10 @@ interface PlayerGridProps {
   flipped: boolean
   onKick: (playerId: string) => void
   onTransfer: (playerId: string) => void
+  onEditStyle: () => void
 }
 
-const CARD_PALETTE = [
-  '#818cf8', '#c084fc', '#f472b6', '#fb923c', '#4ade80',
-  '#22d3ee', '#f87171', '#facc15', '#a78bfa', '#34d399',
-]
-
-export default function PlayerGrid({ players, ownerId, currentPlayerId, isLeader, flipped, onKick, onTransfer }: PlayerGridProps) {
+export default function PlayerGrid({ players, ownerId, currentPlayerId, isLeader, flipped, onKick, onTransfer, onEditStyle }: PlayerGridProps) {
   return (
     <div className="user-group">
       {players.map((user, idx) => {
@@ -37,12 +36,16 @@ export default function PlayerGrid({ players, ownerId, currentPlayerId, isLeader
               connected={user.connected}
               flipped={user.hasVoted && flipped}
               revealDelay={flipped ? idx * 150 : 0}
-              color={CARD_PALETTE[idx % CARD_PALETTE.length]}
+              style={user.style}
+              pattern={user.pattern}
+              patternColor={user.patternColor}
               isOwner={user.id === ownerId}
               canKick={isLeader && !isSelf}
               onKick={() => onKick(user.id)}
               canTransfer={isLeader && !isSelf && user.connected}
               onTransfer={() => onTransfer(user.id)}
+              canEditStyle={isSelf}
+              onEditStyle={onEditStyle}
             />
           </div>
         )

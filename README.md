@@ -29,6 +29,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 
 - [React 19](https://react.dev/) with TypeScript and Vite
 - [.NET 9](https://dotnet.microsoft.com/) with SignalR
+- [react-colorful](https://github.com/omgovich/react-colorful) for the color picker
 - [xUnit](https://xunit.net/) for unit testing
 - [Docker](https://www.docker.com/) for containerization
 
@@ -41,6 +42,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 - Kick player and transfer ownership
 - Anonymous coffee break counter with clear-all for the room owner
 - Anonymous emoji reactions with floating animation
+- Customizable card style per player (color, gradient, pattern) persisted in localStorage
 - Celebration animation when all votes match
 - Mini-view popup for multi-monitor setups
 - Dark/Light mode
@@ -68,7 +70,7 @@ PlanningPoker.Api            -> SignalR Hub, Program.cs
 PlanningPoker.Application    -> Services, Interfaces, Results
 PlanningPoker.Domain         -> Entities, Enums, Snapshots, ValueObjects
 PlanningPoker.Infrastructure -> InMemoryRoomRepository
-PlanningPoker.Tests          -> xUnit (41 tests)
+PlanningPoker.Tests          -> xUnit (44 tests)
 ```
 
 **Frontend:**

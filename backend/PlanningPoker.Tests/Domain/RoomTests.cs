@@ -453,6 +453,44 @@ public class RoomTests
 
     #endregion
 
+    #region Player Style
+
+    [Fact]
+    public void SetCardStyle_SetsCustomValue_ExposedInSnapshot()
+    {
+        var room = CreateRoom();
+        room.SetCardStyle("owner", "#ff6b6b", "dots", "#000000");
+
+        var snapshot = room.ToSnapshot();
+        var player = snapshot.Players.First(p => p.Id == "owner");
+        Assert.Equal("#ff6b6b", player.Style);
+        Assert.Equal("dots", player.Pattern);
+        Assert.Equal("#000000", player.PatternColor);
+    }
+
+    [Fact]
+    public void SetCardStyle_AllNull_ClearsEverything()
+    {
+        var room = CreateRoom();
+        room.SetCardStyle("owner", "#ff6b6b", "dots", "#000000");
+        room.SetCardStyle("owner", null, null, null);
+
+        var snapshot = room.ToSnapshot();
+        var player = snapshot.Players.First(p => p.Id == "owner");
+        Assert.Null(player.Style);
+        Assert.Null(player.Pattern);
+        Assert.Null(player.PatternColor);
+    }
+
+    [Fact]
+    public void SetCardStyle_UnknownPlayer_Throws()
+    {
+        var room = CreateRoom();
+        Assert.Throws<InvalidOperationException>(() => room.SetCardStyle("nonexistent", "#ff6b6b", null, null));
+    }
+
+    #endregion
+
     #region Concurrency
 
     [Fact]

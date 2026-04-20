@@ -138,6 +138,15 @@ public class PlanningHub(
             await Clients.Group(result.RoomId).SendAsync("REACTION", result.Reaction);
     }
 
+    public async Task UpdateStyle(string roomId, string? style, string? pattern, string? patternColor)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.UpdateStyle(roomId, style, pattern, patternColor, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+    }
+
     public async Task LeaveRoom(string roomId)
     {
         var result = roomService.LeaveRoom(roomId, Context.ConnectionId);
