@@ -16,6 +16,8 @@ import Fireworks from './Fireworks'
 import ConfirmModal from './ConfirmModal'
 import ConnectionBanner from './ConnectionBanner'
 import BreakRequestBanner from './BreakRequestBanner'
+import ReactionBar from './ReactionBar'
+import ReactionOverlay from './ReactionOverlay'
 import { CoffeeIcon } from './Icons'
 
 interface ModalState {
@@ -197,6 +199,11 @@ export default function Room() {
     try { await actions.clearBreakRequests(roomId) } catch { /* rate limited */ }
   }, [actions, roomId])
 
+  const sendReaction = useCallback(async (key: string) => {
+    if (!roomId) return
+    try { await actions.sendReaction(roomId, key) } catch { /* rate limited */ }
+  }, [actions, roomId])
+
   const openMiniView = () => {
     window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
   }
@@ -265,14 +272,17 @@ export default function Room() {
                 onVote={submitVote}
                 disabled={flipped}
               />
-              <button
-                className={`btn-break ${hasActiveBreakRequest ? 'active' : ''}`}
-                onClick={toggleBreakRequest}
-                title={hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
-              >
-                <CoffeeIcon />
-                {hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
-              </button>
+              <div className="voting-actions">
+                <ReactionBar onSend={sendReaction} />
+                <button
+                  className={`btn-break ${hasActiveBreakRequest ? 'active' : ''}`}
+                  onClick={toggleBreakRequest}
+                  title={hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
+                >
+                  <CoffeeIcon />
+                  {hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -283,6 +293,8 @@ export default function Room() {
         onClose={() => setHistoryOpen(false)}
         history={snapshot?.history ?? []}
       />
+
+      <ReactionOverlay />
 
       {modal && (
         <ConfirmModal

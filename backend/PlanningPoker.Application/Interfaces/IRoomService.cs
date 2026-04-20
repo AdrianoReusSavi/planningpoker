@@ -18,6 +18,7 @@ public interface IRoomService
     KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId);
     RoomSnapshot? ToggleBreakRequest(string roomId, string connectionId);
     RoomSnapshot? ClearBreakRequests(string roomId, string connectionId);
+    ReactionResult? ValidateReaction(string roomId, string reaction, string connectionId);
     LeaveResult? LeaveRoom(string roomId, string connectionId);
     DisconnectResult? HandleDisconnect(string connectionId);
     RemovalResult PermanentlyRemovePlayer(string roomId, string playerId);

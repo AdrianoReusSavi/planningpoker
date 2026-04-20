@@ -68,6 +68,12 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const sendReaction = useCallback(
+    (roomId: string, reaction: string) =>
+      invoke<void>('SendReaction', roomId, reaction),
+    [invoke],
+  )
+
   return {
     createRoom,
     enterRoom,
@@ -79,6 +85,7 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     kickPlayer,
     toggleBreakRequest,
     clearBreakRequests,
+    sendReaction,
     transferOwnership,
   }
 }

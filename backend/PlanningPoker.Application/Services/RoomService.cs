@@ -8,6 +8,11 @@ namespace PlanningPoker.Application.Services;
 
 public class RoomService(IRoomRepository repository) : IRoomService
 {
+    private static readonly HashSet<string> AllowedReactions = new(StringComparer.Ordinal)
+    {
+        "like", "dislike", "thinking", "celebrate", "question", "laugh", "cry"
+    };
+
     public CreateRoomResult? CreateRoom(string name, string roomName, EstimationOptions votingDeck, string connectionId)
     {
         if (!ValidateName(name) || !ValidateRoomName(roomName) || !Enum.IsDefined(votingDeck))
@@ -242,6 +247,21 @@ public class RoomService(IRoomRepository repository) : IRoomService
 
         room.ClearBreakRequests();
         return room.ToSnapshot();
+    }
+
+    public ReactionResult? ValidateReaction(string roomId, string reaction, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) || reaction is null || !AllowedReactions.Contains(reaction))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        if (room.FindByConnectionId(connectionId) is null)
+            return null;
+
+        return new ReactionResult(roomId, reaction);
     }
 
     public LeaveResult? LeaveRoom(string roomId, string connectionId)
