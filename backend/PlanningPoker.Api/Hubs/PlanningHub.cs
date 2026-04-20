@@ -13,7 +13,7 @@ public class PlanningHub(
     private static readonly ConcurrentDictionary<string, CancellationTokenSource> DisconnectTimers = new();
     private static readonly ConcurrentDictionary<string, DateTime> LastActionTime = new();
     private static readonly TimeSpan ActionCooldown = TimeSpan.FromMilliseconds(200);
-    private const int DisconnectTimeoutSeconds = 20;
+    private const int DisconnectTimeoutSeconds = 300;
 
     public async Task Ping()
         => await Clients.Caller.SendAsync("Pong");

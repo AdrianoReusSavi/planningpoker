@@ -12,7 +12,7 @@ export function getConnection(): HubConnection {
   if (!connection) {
     connection = new HubConnectionBuilder()
       .withUrl(HUB_URL)
-      .withAutomaticReconnect([0, 1000, 2000, 5000, 10000, 30000])
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 20000, 30000, 60000, 60000])
       .configureLogging(LogLevel.Warning)
       .build()
   }
