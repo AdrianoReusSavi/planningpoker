@@ -129,6 +129,15 @@ public class PlanningHub(
             await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
     }
 
+    public async Task SendReaction(string roomId, string reaction)
+    {
+        if (!IsActionAllowed()) return;
+
+        var result = roomService.ValidateReaction(roomId, reaction, Context.ConnectionId);
+        if (result is not null)
+            await Clients.Group(result.RoomId).SendAsync("REACTION", result.Reaction);
+    }
+
     public async Task LeaveRoom(string roomId)
     {
         var result = roomService.LeaveRoom(roomId, Context.ConnectionId);

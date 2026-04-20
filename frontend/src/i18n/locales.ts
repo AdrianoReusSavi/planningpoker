@@ -61,6 +61,15 @@ const locales = {
     'break.countOne': '1 pedido de pausa',
     'break.countMany': '{count} pedidos de pausa',
 
+    // Reactions
+    'reaction.like': 'Curtir',
+    'reaction.dislike': 'Descurtir',
+    'reaction.thinking': 'Pensativo',
+    'reaction.celebrate': 'Comemorar',
+    'reaction.question': 'Interrogação',
+    'reaction.laugh': 'Risada',
+    'reaction.cry': 'Choro',
+
     // History
     'history.title': 'Histórico de rodadas',
     'history.empty': 'Nenhuma rodada finalizada ainda.',
@@ -144,6 +153,14 @@ const locales = {
     'break.countOne': '1 break request',
     'break.countMany': '{count} break requests',
 
+    'reaction.like': 'Like',
+    'reaction.dislike': 'Dislike',
+    'reaction.thinking': 'Thinking',
+    'reaction.celebrate': 'Celebrate',
+    'reaction.question': 'Question',
+    'reaction.laugh': 'Laugh',
+    'reaction.cry': 'Cry',
+
     'history.title': 'Round history',
     'history.empty': 'No rounds completed yet.',
     'history.round': 'Round',
@@ -222,6 +239,14 @@ const locales = {
     'break.clear': 'Limpiar pedidos',
     'break.countOne': '1 pedido de pausa',
     'break.countMany': '{count} pedidos de pausa',
+
+    'reaction.like': 'Me gusta',
+    'reaction.dislike': 'No me gusta',
+    'reaction.thinking': 'Pensativo',
+    'reaction.celebrate': 'Celebrar',
+    'reaction.question': 'Pregunta',
+    'reaction.laugh': 'Risa',
+    'reaction.cry': 'Llanto',
 
     'history.title': 'Historial de rondas',
     'history.empty': 'Ninguna ronda finalizada aún.',
