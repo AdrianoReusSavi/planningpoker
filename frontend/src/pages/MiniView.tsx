@@ -47,6 +47,9 @@ export default function MiniView() {
       hasVoted: p.hasVoted,
       vote: snapshot.votes[p.id] ?? '',
       connected: p.connected,
+      style: p.style,
+      pattern: p.pattern,
+      patternColor: p.patternColor,
     }))
   }, [snapshot])
 

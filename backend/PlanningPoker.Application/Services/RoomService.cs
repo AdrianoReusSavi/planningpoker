@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using PlanningPoker.Application.Results;
 using PlanningPoker.Application.Interfaces;
 using PlanningPoker.Domain.Entities;
@@ -6,12 +7,25 @@ using PlanningPoker.Domain.Snapshots;
 
 namespace PlanningPoker.Application.Services;
 
-public class RoomService(IRoomRepository repository) : IRoomService
+public partial class RoomService(IRoomRepository repository) : IRoomService
 {
     private static readonly HashSet<string> AllowedReactions = new(StringComparer.Ordinal)
     {
         "like", "dislike", "thinking", "celebrate", "question", "laugh", "cry"
     };
+
+    private static readonly HashSet<string> AllowedPatterns = new(StringComparer.Ordinal)
+    {
+        "stripes", "dots", "grid", "waves", "zigzag", "none"
+    };
+
+    [GeneratedRegex(@"^#[0-9a-fA-F]{6}$")]
+    private static partial Regex SolidColorRegex();
+
+    [GeneratedRegex(@"^linear-gradient\((\d{1,3})deg, #[0-9a-fA-F]{6}, #[0-9a-fA-F]{6}\)$")]
+    private static partial Regex GradientRegex();
+
+    // ── Room lifecycle ──
 
     public CreateRoomResult? CreateRoom(string name, string roomName, EstimationOptions votingDeck, string connectionId)
     {
@@ -100,6 +114,8 @@ public class RoomService(IRoomRepository repository) : IRoomService
         return repository.GetRoom(roomId)?.ToSnapshot();
     }
 
+    // ── Ownership ──
+
     public RoomSnapshot? TransferOwnership(string roomId, string targetPlayerId, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(targetPlayerId))
@@ -120,6 +136,8 @@ public class RoomService(IRoomRepository repository) : IRoomService
         }
         catch (InvalidOperationException) { return null; }
     }
+
+    // ── Voting ──
 
     public RoomSnapshot? SubmitVote(string roomId, string vote, string connectionId)
     {
@@ -184,6 +202,8 @@ public class RoomService(IRoomRepository repository) : IRoomService
         catch (InvalidOperationException) { return null; }
     }
 
+    // ── Player management ──
+
     public KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(targetPlayerId))
@@ -210,6 +230,8 @@ public class RoomService(IRoomRepository repository) : IRoomService
 
         return new KickResult(roomId, targetConnectionId, room.ToSnapshot());
     }
+
+    // ── Break requests ──
 
     public RoomSnapshot? ToggleBreakRequest(string roomId, string connectionId)
     {
@@ -249,6 +271,8 @@ public class RoomService(IRoomRepository repository) : IRoomService
         return room.ToSnapshot();
     }
 
+    // ── Player interactions (reactions, style) ──
+
     public ReactionResult? ValidateReaction(string roomId, string reaction, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId) || reaction is null || !AllowedReactions.Contains(reaction))
@@ -263,6 +287,38 @@ public class RoomService(IRoomRepository repository) : IRoomService
 
         return new ReactionResult(roomId, reaction);
     }
+
+    public RoomSnapshot? UpdateStyle(string roomId, string? style, string? pattern, string? patternColor, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        if (style is not null && !IsValidStyle(style))
+            return null;
+
+        if (pattern is not null && !AllowedPatterns.Contains(pattern))
+            return null;
+
+        if (patternColor is not null && !SolidColorRegex().IsMatch(patternColor))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null)
+            return null;
+
+        try
+        {
+            room.SetCardStyle(user.PlayerId, style, pattern, patternColor);
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    // ── Exit flow ──
 
     public LeaveResult? LeaveRoom(string roomId, string connectionId)
     {
@@ -325,6 +381,19 @@ public class RoomService(IRoomRepository repository) : IRoomService
         }
 
         return new RemovalResult(false, room.ToSnapshot());
+    }
+
+    // ── Private helpers ──
+
+    private static bool IsValidStyle(string style)
+    {
+        if (SolidColorRegex().IsMatch(style))
+            return true;
+
+        var gradientMatch = GradientRegex().Match(style);
+        return gradientMatch.Success
+            && int.TryParse(gradientMatch.Groups[1].Value, out var angle)
+            && angle is >= 0 and <= 360;
     }
 
     private static bool ValidateName(string? name)

@@ -74,6 +74,12 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const updateStyle = useCallback(
+    (roomId: string, style: string | null, pattern: string | null, patternColor: string | null) =>
+      invoke<void>('UpdateStyle', roomId, style, pattern, patternColor),
+    [invoke],
+  )
+
   return {
     createRoom,
     enterRoom,
@@ -86,6 +92,7 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     toggleBreakRequest,
     clearBreakRequests,
     sendReaction,
+    updateStyle,
     transferOwnership,
   }
 }

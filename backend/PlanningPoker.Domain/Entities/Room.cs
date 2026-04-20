@@ -137,6 +137,20 @@ public class Room
         finally { _lock.ExitWriteLock(); }
     }
 
+    public void SetCardStyle(string playerId, string? style, string? pattern, string? patternColor)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var user = Users.FirstOrDefault(u => u.PlayerId == playerId)
+                ?? throw new InvalidOperationException("Player not found in room.");
+            user.Style = style;
+            user.Pattern = pattern;
+            user.PatternColor = patternColor;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
     public User? FindByPlayerId(string playerId)
     {
         _lock.EnterReadLock();
@@ -228,7 +242,7 @@ public class Room
         try
         {
             var players = Users
-                .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, u.Vote is not null, u.Connected))
+                .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, u.Vote is not null, u.Connected, u.Style, u.Pattern, u.PatternColor))
                 .ToList();
 
             var votes = Phase == RoomPhase.Revealed

@@ -18,7 +18,12 @@ import ConnectionBanner from './ConnectionBanner'
 import BreakRequestBanner from './BreakRequestBanner'
 import ReactionBar from './ReactionBar'
 import ReactionOverlay from './ReactionOverlay'
+import StyleEditor from './StyleEditor'
 import { CoffeeIcon } from './Icons'
+
+const PLAYER_STYLE_KEY = 'playerStyle'
+const PLAYER_PATTERN_KEY = 'playerPattern'
+const PLAYER_PATTERN_COLOR_KEY = 'playerPatternColor'
 
 interface ModalState {
   title: string
@@ -41,6 +46,8 @@ export default function Room() {
   const [revealLoading, setRevealLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
+  const [styleEditorOpen, setStyleEditorOpen] = useState(false)
+  const hydratedRoomRef = useRef<string | null>(null)
 
   const roomId = snapshot?.id ?? ''
   const flipped = snapshot?.phase === 'REVEALED'
@@ -55,8 +62,13 @@ export default function Room() {
       hasVoted: p.hasVoted,
       vote: snapshot.votes[p.id] ?? '',
       connected: p.connected,
+      style: p.style,
+      pattern: p.pattern,
+      patternColor: p.patternColor,
     }))
   }, [snapshot])
+
+  const selfPlayer = playerId !== null ? players.find(p => p.id === playerId) : undefined
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
@@ -204,6 +216,38 @@ export default function Room() {
     try { await actions.sendReaction(roomId, key) } catch { /* rate limited */ }
   }, [actions, roomId])
 
+  const saveStyle = useCallback(async (style: string | null, pattern: string | null, patternColor: string | null) => {
+    if (!roomId) return
+    const persist = (key: string, value: string | null) => {
+      if (value) localStorage.setItem(key, value)
+      else localStorage.removeItem(key)
+    }
+    persist(PLAYER_STYLE_KEY, style)
+    persist(PLAYER_PATTERN_KEY, pattern)
+    persist(PLAYER_PATTERN_COLOR_KEY, patternColor)
+    setStyleEditorOpen(false)
+    try { await actions.updateStyle(roomId, style, pattern, patternColor) } catch { /* ignore */ }
+  }, [actions, roomId])
+
+  useEffect(() => {
+    if (!roomId || !playerId || !selfPlayer) return
+    if (hydratedRoomRef.current === roomId) return
+    hydratedRoomRef.current = roomId
+
+    const savedStyle = localStorage.getItem(PLAYER_STYLE_KEY)
+    const savedPattern = localStorage.getItem(PLAYER_PATTERN_KEY)
+    const savedPatternColor = localStorage.getItem(PLAYER_PATTERN_COLOR_KEY)
+
+    const needsSync =
+      savedStyle !== selfPlayer.style ||
+      savedPattern !== selfPlayer.pattern ||
+      savedPatternColor !== selfPlayer.patternColor
+
+    if (needsSync && (savedStyle || savedPattern || savedPatternColor)) {
+      actions.updateStyle(roomId, savedStyle, savedPattern, savedPatternColor).catch(() => {})
+    }
+  }, [roomId, playerId, selfPlayer, actions])
+
   const openMiniView = () => {
     window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
   }
@@ -242,6 +286,7 @@ export default function Room() {
         flipped={flipped}
         onKick={requestKick}
         onTransfer={requestTransfer}
+        onEditStyle={() => setStyleEditorOpen(true)}
       />
 
       <VoteSummary
@@ -295,6 +340,16 @@ export default function Room() {
       />
 
       <ReactionOverlay />
+
+      {styleEditorOpen && selfPlayer && (
+        <StyleEditor
+          initialStyle={selfPlayer.style}
+          initialPattern={selfPlayer.pattern}
+          initialPatternColor={selfPlayer.patternColor}
+          onSave={saveStyle}
+          onCancel={() => setStyleEditorOpen(false)}
+        />
+      )}
 
       {modal && (
         <ConfirmModal
