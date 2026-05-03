@@ -134,8 +134,28 @@ public class PlanningHub(
         if (!IsActionAllowed()) return;
 
         var result = roomService.ValidateReaction(roomId, reaction, Context.ConnectionId);
-        if (result is not null)
-            await Clients.Group(result.RoomId).SendAsync("REACTION", result.Reaction);
+        if (result is null) return;
+
+        await Clients.Group(result.RoomId).SendAsync("REACTION", new
+        {
+            reaction = result.Reaction,
+            fromPlayerId = result.FromPlayerId,
+        });
+    }
+
+    public async Task ThrowItem(string roomId, string targetPlayerId, string item)
+    {
+        if (!IsActionAllowed()) return;
+
+        var result = roomService.ValidateThrow(roomId, targetPlayerId, item, Context.ConnectionId);
+        if (result is null) return;
+
+        await Clients.Group(result.RoomId).SendAsync("THROW", new
+        {
+            fromPlayerId = result.FromPlayerId,
+            toPlayerId = result.ToPlayerId,
+            item = result.Item,
+        });
     }
 
     public async Task UpdateStyle(string roomId, string? style, string? pattern, string? patternColor)

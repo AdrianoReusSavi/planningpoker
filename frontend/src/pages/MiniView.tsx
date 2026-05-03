@@ -6,6 +6,8 @@ import { getDeckByKey } from '../constants/estimationOptions'
 import VoteSummary from '../components/VoteSummary'
 import VotingControls from '../components/VotingControls'
 import VotingDeck from '../components/VotingDeck'
+import ReactionBar from '../components/ReactionBar'
+import BreakButton from '../components/BreakButton'
 import type { PlayerView } from '../components/PlayerGrid'
 
 export default function MiniView() {
@@ -68,6 +70,11 @@ export default function MiniView() {
 
   const revealVotes = () => postMessage({ type: 'REVEAL' })
   const resetVotes = () => postMessage({ type: 'RESET' })
+  const sendReaction = (key: string) => postMessage({ type: 'REACTION', value: key })
+  const toggleBreakRequest = () => postMessage({ type: 'BREAK' })
+
+  const breakRequesters = snapshot?.breakRequesters ?? []
+  const hasActiveBreakRequest = playerId !== null && breakRequesters.includes(playerId)
 
   if (!snapshot) {
     return (
@@ -112,6 +119,11 @@ export default function MiniView() {
         onVote={submitVote}
         disabled={flipped}
       />
+
+      <div className="mini-view-reactions">
+        <ReactionBar onSend={sendReaction} />
+        <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
+      </div>
     </div>
   )
 }

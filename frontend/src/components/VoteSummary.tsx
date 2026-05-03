@@ -12,7 +12,7 @@ export default function VoteSummary({ flipped, players, votingDeck }: VoteSummar
   const hasVotes = players.some(p => p.vote)
 
   if (!flipped || !hasVotes) {
-    return <div className="vote-summary" aria-hidden="true" />
+    return null
   }
 
   const numericDeck = votingDeck.map(Number).filter(n => !isNaN(n))
@@ -57,5 +57,5 @@ export default function VoteSummary({ flipped, players, votingDeck }: VoteSummar
     )
   }
 
-  return <div className="vote-summary placeholder" aria-hidden="true" />
+  return null
 }

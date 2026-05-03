@@ -74,6 +74,12 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const throwItem = useCallback(
+    (roomId: string, targetPlayerId: string, item: string) =>
+      invoke<void>('ThrowItem', roomId, targetPlayerId, item),
+    [invoke],
+  )
+
   const updateStyle = useCallback(
     (roomId: string, style: string | null, pattern: string | null, patternColor: string | null) =>
       invoke<void>('UpdateStyle', roomId, style, pattern, patternColor),
@@ -92,6 +98,7 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     toggleBreakRequest,
     clearBreakRequests,
     sendReaction,
+    throwItem,
     updateStyle,
     transferOwnership,
   }

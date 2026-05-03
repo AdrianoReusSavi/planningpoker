@@ -18,8 +18,9 @@ import ConnectionBanner from './ConnectionBanner'
 import BreakRequestBanner from './BreakRequestBanner'
 import ReactionBar from './ReactionBar'
 import ReactionOverlay from './ReactionOverlay'
+import ThrowOverlay from './ThrowOverlay'
 import StyleEditor from './StyleEditor'
-import { CoffeeIcon } from './Icons'
+import BreakButton from './BreakButton'
 
 const PLAYER_STYLE_KEY = 'playerStyle'
 const PLAYER_PATTERN_KEY = 'playerPattern'
@@ -92,6 +93,10 @@ export default function Room() {
       actions.revealVotes(roomId).catch(() => {})
     } else if (data.type === 'RESET' && roomId) {
       actions.resetVotes(roomId).catch(() => {})
+    } else if (data.type === 'REACTION' && roomId) {
+      actions.sendReaction(roomId, data.value as string).catch(() => {})
+    } else if (data.type === 'BREAK' && roomId) {
+      actions.toggleBreakRequest(roomId).catch(() => {})
     } else if (data.type === 'REQUEST_SYNC' && snapshot && playerId) {
       postRef.current({ type: 'SYNC', snapshot, playerId, vote })
     }
@@ -216,6 +221,11 @@ export default function Room() {
     try { await actions.sendReaction(roomId, key) } catch { /* rate limited */ }
   }, [actions, roomId])
 
+  const throwItem = useCallback(async (targetId: string, itemKey: string) => {
+    if (!roomId) return
+    try { await actions.throwItem(roomId, targetId, itemKey) } catch { /* rate limited */ }
+  }, [actions, roomId])
+
   const saveStyle = useCallback(async (style: string | null, pattern: string | null, patternColor: string | null) => {
     if (!roomId) return
     const persist = (key: string, value: string | null) => {
@@ -228,6 +238,12 @@ export default function Room() {
     setStyleEditorOpen(false)
     try { await actions.updateStyle(roomId, style, pattern, patternColor) } catch { /* ignore */ }
   }, [actions, roomId])
+
+  useEffect(() => {
+    const sidebarVisible = !isWatching && !miniViewOpen
+    document.body.classList.toggle('has-room-sidebar', sidebarVisible)
+    return () => { document.body.classList.remove('has-room-sidebar') }
+  }, [isWatching, miniViewOpen])
 
   useEffect(() => {
     if (!roomId || !playerId || !selfPlayer) return
@@ -278,60 +294,58 @@ export default function Room() {
 
       {showFireworks && <Fireworks />}
 
-      <PlayerGrid
-        players={players}
-        ownerId={snapshot?.ownerId ?? ''}
-        currentPlayerId={playerId}
-        isLeader={isLeader}
-        flipped={flipped}
-        onKick={requestKick}
-        onTransfer={requestTransfer}
-        onEditStyle={() => setStyleEditorOpen(true)}
-      />
+      <div className="room-body">
+        <div className="room-stage">
+          <PlayerGrid
+            players={players}
+            ownerId={snapshot?.ownerId ?? ''}
+            currentPlayerId={playerId}
+            isLeader={isLeader}
+            flipped={flipped}
+            onKick={requestKick}
+            onTransfer={requestTransfer}
+            onEditStyle={() => setStyleEditorOpen(true)}
+            onThrow={throwItem}
+          />
 
-      <VoteSummary
-        flipped={flipped}
-        players={players}
-        votingDeck={votingDeck}
-      />
-
-      {!isWatching && (
-        <>
-          {!miniViewOpen && (
-            <VotingControls
-              isLeader={isLeader}
+          <div className="room-stage-center">
+            <VoteSummary
               flipped={flipped}
-              allVoted={allVoted}
-              someVoted={someVoted}
-              revealLoading={revealLoading}
-              resetLoading={resetLoading}
-              onReveal={revealVotes}
-              onReset={resetVotes}
+              players={players}
+              votingDeck={votingDeck}
             />
-          )}
-          {!miniViewOpen && (
-            <div className="voting-area">
+          </div>
+        </div>
+
+        {!isWatching && !miniViewOpen && (
+          <aside className="room-sidebar">
+            <div className="sidebar-section sidebar-section-controls">
+              <VotingControls
+                isLeader={isLeader}
+                flipped={flipped}
+                allVoted={allVoted}
+                someVoted={someVoted}
+                revealLoading={revealLoading}
+                resetLoading={resetLoading}
+                onReveal={revealVotes}
+                onReset={resetVotes}
+              />
+            </div>
+            <div className="sidebar-section sidebar-section-deck">
               <VotingDeck
                 cards={votingDeck}
                 selectedVote={vote}
                 onVote={submitVote}
                 disabled={flipped}
               />
-              <div className="voting-actions">
-                <ReactionBar onSend={sendReaction} />
-                <button
-                  className={`btn-break ${hasActiveBreakRequest ? 'active' : ''}`}
-                  onClick={toggleBreakRequest}
-                  title={hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
-                >
-                  <CoffeeIcon />
-                  {hasActiveBreakRequest ? t('break.buttonActive') : t('break.button')}
-                </button>
-              </div>
             </div>
-          )}
-        </>
-      )}
+            <div className="sidebar-section sidebar-section-extras">
+              <ReactionBar onSend={sendReaction} />
+              <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
+            </div>
+          </aside>
+        )}
+      </div>
 
       <RoundHistory
         open={historyOpen}
@@ -340,6 +354,7 @@ export default function Room() {
       />
 
       <ReactionOverlay />
+      <ThrowOverlay />
 
       {styleEditorOpen && selfPlayer && (
         <StyleEditor

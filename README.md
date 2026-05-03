@@ -37,18 +37,21 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 
 - Real-time voting with SignalR WebSocket
 - 6 estimation decks (Fibonacci, T-Shirt, Sequential, Linear, Powers of Two, Half-Point)
-- Vote summary with approximate and exact mean
+- Circular "table" layout (up to 10 players) with auto-rebalancing as players join/leave; cards and ellipse scale with viewport so no scroll on zoom in
+- Vote summary as a centered medallion on the table when revealed (approximate + exact mean)
 - Round history with per-round statistics
-- Kick player and transfer ownership
+- Throwables: tap another player's card to throw a turtle 🐢, tomato 🍅, heart ❤️, "didn't get it" 🤔 or rocket 🚀 — parabolic flight, themed impact ring and emoji-particle burst (heart particles trace a heart curve)
+- Anonymous emoji reactions that float upward from the sender's own card
 - Anonymous coffee break counter with clear-all for the room owner
-- Anonymous emoji reactions with floating animation
+- Kick player and transfer ownership
 - Customizable card style per player (color, gradient, pattern) persisted in localStorage
 - Celebration animation when all votes match
-- Mini-view popup for multi-monitor setups
+- Mini-view popup with deck, controls, reactions and break button — synced via BroadcastChannel
 - Dark/Light mode
 - i18n: Portuguese, English, Spanish
 - Automatic reconnection with 20s grace period
 - Thread-safe room state with ReaderWriterLockSlim
+- Per-action cooldown (200ms) on the hub against rapid-fire spam
 
 ## Architecture
 
@@ -70,17 +73,18 @@ PlanningPoker.Api            -> SignalR Hub, Program.cs
 PlanningPoker.Application    -> Services, Interfaces, Results
 PlanningPoker.Domain         -> Entities, Enums, Snapshots, ValueObjects
 PlanningPoker.Infrastructure -> InMemoryRoomRepository
-PlanningPoker.Tests          -> xUnit (44 tests)
+PlanningPoker.Tests          -> xUnit (79 tests)
 ```
 
 **Frontend:**
 
 ```
 src/
-├── components/   -> UI (Room, PlayerGrid, VotingDeck, Fireworks, etc.)
+├── components/   -> UI (Room, PlayerGrid, VotingDeck, ThrowOverlay, ReactionOverlay, etc.)
 ├── contexts/     -> Connection, Room, Theme, I18n, Toast
 ├── hooks/        -> useRoomActions, useLocalStorage, useBroadcastChannel
 ├── pages/        -> Home, MiniView
+├── constants/    -> estimationOptions, reactions, throwables
 ├── i18n/         -> Locales (pt-BR, en, es)
 └── services/     -> SignalR connection
 ```
