@@ -31,7 +31,7 @@ export default function Home() {
     <div className="home">
       <div className="home-toolbar">
         <LocalePicker />
-        <button className="btn-icon" onClick={toggle} title={isDark ? 'Light mode' : 'Dark mode'}>
+        <button className="btn-icon" onClick={toggle} title={isDark ? t('header.lightMode') : t('header.darkMode')}>
           {isDark ? <SunIcon /> : <MoonIcon />}
         </button>
       </div>

@@ -496,9 +496,9 @@ public class RoomTests
     [Fact]
     public async Task ConcurrentVoteSubmission_DoesNotCorruptState()
     {
-        var room = CreateRoom(20);
+        var room = CreateRoom(Room.MaxPlayersPerRoom);
 
-        var tasks = Enumerable.Range(1, 19).Select(i =>
+        var tasks = Enumerable.Range(1, Room.MaxPlayersPerRoom - 1).Select(i =>
             Task.Run(() =>
             {
                 for (var j = 0; j < 100; j++)
@@ -511,7 +511,7 @@ public class RoomTests
         await Task.WhenAll(tasks);
 
         var snapshot = room.ToSnapshot();
-        Assert.Equal(20, snapshot.Players.Count);
+        Assert.Equal(Room.MaxPlayersPerRoom, snapshot.Players.Count);
     }
 
     [Fact]

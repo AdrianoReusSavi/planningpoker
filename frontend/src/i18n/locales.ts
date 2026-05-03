@@ -19,6 +19,17 @@ const locales = {
     'enter.notFound': 'Sala não encontrada. Verifique o link.',
     'enter.connectionError': 'Erro de conexão. Verifique sua internet.',
 
+    // Header
+    'header.locale': 'Idioma',
+    'header.lightMode': 'Modo claro',
+    'header.darkMode': 'Modo escuro',
+    'header.miniView': 'Mini visualização',
+
+    // User Card actions
+    'card.transferTo': 'Transferir liderança para {name}',
+    'card.kick': 'Remover {name}',
+    'card.ownerSuffix': '(líder)',
+
     // Room
     'room.invite': 'Convidar',
     'room.leave': 'Sair',
@@ -69,6 +80,14 @@ const locales = {
     'reaction.question': 'Interrogação',
     'reaction.laugh': 'Risada',
     'reaction.cry': 'Choro',
+
+    // Throwables
+    'throw.title': 'Tacar algo',
+    'throw.turtle': 'Tá demorando',
+    'throw.tomato': 'Tomate',
+    'throw.heart': 'Coração',
+    'throw.confused': 'Não entendi',
+    'throw.rocket': 'Foguete',
 
     // Card Style
     'style.title': 'Personalizar carta',
@@ -136,6 +155,15 @@ const locales = {
     'enter.notFound': 'Room not found. Check the link.',
     'enter.connectionError': 'Connection error. Check your internet.',
 
+    'header.locale': 'Language',
+    'header.lightMode': 'Light mode',
+    'header.darkMode': 'Dark mode',
+    'header.miniView': 'Mini view',
+
+    'card.transferTo': 'Transfer ownership to {name}',
+    'card.kick': 'Remove {name}',
+    'card.ownerSuffix': '(leader)',
+
     'room.invite': 'Invite',
     'room.leave': 'Leave',
     'room.linkCopied': 'Link copied!',
@@ -180,6 +208,13 @@ const locales = {
     'reaction.question': 'Question',
     'reaction.laugh': 'Laugh',
     'reaction.cry': 'Cry',
+
+    'throw.title': 'Throw something',
+    'throw.turtle': 'Taking too long',
+    'throw.tomato': 'Tomato',
+    'throw.heart': 'Heart',
+    'throw.confused': "Didn't get it",
+    'throw.rocket': 'Rocket',
 
     'style.title': 'Customize card',
     'style.cardHint': 'Click to customize your card',
@@ -242,6 +277,15 @@ const locales = {
     'enter.notFound': 'Sala no encontrada. Verifica el enlace.',
     'enter.connectionError': 'Error de conexión. Verifica tu internet.',
 
+    'header.locale': 'Idioma',
+    'header.lightMode': 'Modo claro',
+    'header.darkMode': 'Modo oscuro',
+    'header.miniView': 'Mini vista',
+
+    'card.transferTo': 'Transferir liderazgo a {name}',
+    'card.kick': 'Remover a {name}',
+    'card.ownerSuffix': '(líder)',
+
     'room.invite': 'Invitar',
     'room.leave': 'Salir',
     'room.linkCopied': '¡Enlace copiado!',
@@ -286,6 +330,13 @@ const locales = {
     'reaction.question': 'Pregunta',
     'reaction.laugh': 'Risa',
     'reaction.cry': 'Llanto',
+
+    'throw.title': 'Lanzar algo',
+    'throw.turtle': 'Está tardando',
+    'throw.tomato': 'Tomate',
+    'throw.heart': 'Corazón',
+    'throw.confused': 'No entendí',
+    'throw.rocket': 'Cohete',
 
     'style.title': 'Personalizar tarjeta',
     'style.cardHint': 'Haz clic para personalizar tu tarjeta',

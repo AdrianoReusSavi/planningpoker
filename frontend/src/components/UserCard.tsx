@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react'
-import { CrownIcon, CloseIcon, PaletteIcon } from './Icons'
+import { CrownIcon, CloseIcon, PaletteIcon, TargetIcon } from './Icons'
 import { useI18n } from '../contexts/I18nContext'
 
 interface UserCardProps {
+  playerId: string
   username: string
   hasVoted: boolean
   vote: string
@@ -19,6 +20,8 @@ interface UserCardProps {
   onTransfer: () => void
   canEditStyle: boolean
   onEditStyle: () => void
+  canThrow: boolean
+  onThrow: () => void
 }
 
 const PATTERN_CLASSES: Record<string, string> = {
@@ -30,7 +33,12 @@ const PATTERN_CLASSES: Record<string, string> = {
   none: 'pattern-none',
 }
 
-export default function UserCard({ username, hasVoted, vote, connected, flipped, revealDelay, style, pattern, patternColor, isOwner, canKick, onKick, canTransfer, onTransfer, canEditStyle, onEditStyle }: UserCardProps) {
+export default function UserCard({
+  playerId, username, hasVoted, vote, connected, flipped, revealDelay,
+  style, pattern, patternColor, isOwner,
+  canKick, onKick, canTransfer, onTransfer,
+  canEditStyle, onEditStyle, canThrow, onThrow,
+}: UserCardProps) {
   const { t } = useI18n()
   const patternClass = PATTERN_CLASSES[pattern ?? 'stripes'] ?? 'pattern-stripes'
   const stripeStyle: CSSProperties | undefined = style ? { background: style } : undefined
@@ -41,13 +49,21 @@ export default function UserCard({ username, hasVoted, vote, connected, flipped,
     extra['--pattern-alpha'] = '25%'
   }
 
+  const interactive = canEditStyle || canThrow
+  const handleClick = canEditStyle ? onEditStyle : canThrow ? onThrow : undefined
+  const ariaLabel = canEditStyle ? t('style.title') : canThrow ? t('throw.title') : undefined
+  const titleText = canEditStyle ? t('style.cardHint') : canThrow ? t('throw.title') : undefined
+
   return (
-    <div className={`user-card ${!connected ? 'disconnected' : ''} ${canEditStyle ? 'editable' : ''}`}>
+    <div
+      data-player-id={playerId}
+      className={`user-card ${!connected ? 'disconnected' : ''} ${canEditStyle ? 'editable' : ''} ${canThrow ? 'targetable' : ''}`}
+    >
       {canTransfer && (
         <button
           className="user-card-action transfer"
           onClick={(e) => { e.stopPropagation(); onTransfer() }}
-          title={`Transferir liderança para ${username}`}
+          title={t('card.transferTo', { name: username })}
         >
           <CrownIcon />
         </button>
@@ -56,7 +72,7 @@ export default function UserCard({ username, hasVoted, vote, connected, flipped,
         <button
           className="user-card-action kick"
           onClick={(e) => { e.stopPropagation(); onKick() }}
-          title={`Remover ${username}`}
+          title={t('card.kick', { name: username })}
         >
           <CloseIcon />
         </button>
@@ -66,14 +82,19 @@ export default function UserCard({ username, hasVoted, vote, connected, flipped,
           <PaletteIcon />
         </span>
       )}
+      {canThrow && (
+        <span className="user-card-throw-hint" aria-hidden="true">
+          <TargetIcon />
+        </span>
+      )}
       <div
         className="card-flip-container"
-        onClick={canEditStyle ? onEditStyle : undefined}
-        role={canEditStyle ? 'button' : undefined}
-        tabIndex={canEditStyle ? 0 : undefined}
-        aria-label={canEditStyle ? t('style.title') : undefined}
-        title={canEditStyle ? t('style.cardHint') : undefined}
-        onKeyDown={canEditStyle ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEditStyle() } } : undefined}
+        onClick={handleClick}
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        aria-label={ariaLabel}
+        title={titleText}
+        onKeyDown={interactive && handleClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick() } } : undefined}
       >
         <div
           className={`card-flip ${flipped ? 'flipped' : ''}`}
@@ -92,7 +113,7 @@ export default function UserCard({ username, hasVoted, vote, connected, flipped,
           </div>
         </div>
       </div>
-      <span className="user-card-name" title={`${username}${isOwner ? ' (líder)' : ''}`}>
+      <span className="user-card-name" title={`${username}${isOwner ? ` ${t('card.ownerSuffix')}` : ''}`}>
         {isOwner && <span className="crown"><CrownIcon /></span>}
         {username}
       </span>

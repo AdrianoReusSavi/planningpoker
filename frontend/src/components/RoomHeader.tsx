@@ -33,14 +33,14 @@ export default function RoomHeader({ roomName, status, leaveLoading, historyCoun
       </div>
       <div className="room-header-right">
         <LocalePicker />
-        <button className="btn-icon" onClick={toggle} title={isDark ? 'Light mode' : 'Dark mode'}>
+        <button className="btn-icon" onClick={toggle} title={isDark ? t('header.lightMode') : t('header.darkMode')}>
           {isDark ? <SunIcon /> : <MoonIcon />}
         </button>
         <button className="btn-icon" onClick={onOpenHistory} title={t('history.title')}>
           <HistoryIcon />
           {historyCount > 0 && <span className="btn-icon-badge">{historyCount}</span>}
         </button>
-        <button className="btn-icon" onClick={onOpenMiniView} title="Mini-view">
+        <button className="btn-icon" onClick={onOpenMiniView} title={t('header.miniView')}>
           <ExternalLinkIcon />
         </button>
         <button className="btn-outlined primary" onClick={onCopyLink}>

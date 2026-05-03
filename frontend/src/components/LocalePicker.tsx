@@ -10,7 +10,7 @@ const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
 ]
 
 export default function LocalePicker() {
-  const { locale, setLocale } = useI18n()
+  const { locale, setLocale, t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -26,7 +26,7 @@ export default function LocalePicker() {
 
   return (
     <div className="locale-picker" ref={ref}>
-      <button className="btn-icon" onClick={() => setOpen(!open)} title="Idioma">
+      <button className="btn-icon" onClick={() => setOpen(!open)} title={t('header.locale')}>
         <GlobeIcon />
       </button>
       {open && (

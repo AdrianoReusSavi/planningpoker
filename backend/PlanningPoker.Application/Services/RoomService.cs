@@ -14,6 +14,11 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         "like", "dislike", "thinking", "celebrate", "question", "laugh", "cry"
     };
 
+    private static readonly HashSet<string> AllowedThrowItems = new(StringComparer.Ordinal)
+    {
+        "turtle", "tomato", "heart", "confused", "rocket"
+    };
+
     private static readonly HashSet<string> AllowedPatterns = new(StringComparer.Ordinal)
     {
         "stripes", "dots", "grid", "waves", "zigzag", "none"
@@ -282,10 +287,31 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        if (room.FindByConnectionId(connectionId) is null)
+        var sender = room.FindByConnectionId(connectionId);
+        if (sender is null)
             return null;
 
-        return new ReactionResult(roomId, reaction);
+        return new ReactionResult(roomId, reaction, sender.PlayerId);
+    }
+
+    public ThrowResult? ValidateThrow(string roomId, string targetPlayerId, string item, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(targetPlayerId)
+            || item is null || !AllowedThrowItems.Contains(item))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var sender = room.FindByConnectionId(connectionId);
+        if (sender is null || sender.PlayerId == targetPlayerId)
+            return null;
+
+        if (room.FindByPlayerId(targetPlayerId) is null)
+            return null;
+
+        return new ThrowResult(roomId, sender.PlayerId, targetPlayerId, item);
     }
 
     public RoomSnapshot? UpdateStyle(string roomId, string? style, string? pattern, string? patternColor, string connectionId)

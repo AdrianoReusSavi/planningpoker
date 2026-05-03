@@ -19,7 +19,7 @@ public class Room
     private readonly HashSet<string> _breakRequesters = [];
     private int _roundNumber = 1;
 
-    public const int MaxPlayersPerRoom = 50;
+    public const int MaxPlayersPerRoom = 10;
     public const int MaxNameLength = 50;
     public const int MaxRoomNameLength = 30;
     public const int MaxVoteLength = 10;

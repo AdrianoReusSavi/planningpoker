@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { useConnection } from '../contexts/ConnectionContext'
 import { emojiByKey } from '../constants/reactions'
+import { findCardAnchor } from '../utils/cardLocator'
+
+interface ReactionEvent {
+  reaction: string
+  fromPlayerId: string
+}
 
 interface ActiveReaction {
   id: number
   emoji: string
-  offsetX: number
+  x: number
+  y: number
+  drift: number
 }
 
 const REACTION_DURATION_MS = 2800
-const SCREEN_SPREAD_RATIO = 0.9
-const BUBBLE_HALF_WIDTH_PX = 25
+const DRIFT_RANGE_PX = 36
 
 export default function ReactionOverlay() {
   const { connection } = useConnection()
@@ -20,16 +27,18 @@ export default function ReactionOverlay() {
   useEffect(() => {
     if (!connection) return
 
-    const handler = (key: string) => {
-      const emoji = emojiByKey[key]
+    const handler = (data: ReactionEvent) => {
+      const emoji = emojiByKey[data.reaction]
       if (!emoji) return
 
-      const id = ++nextIdRef.current
-      const maxOffset = Math.max(0, (window.innerWidth * SCREEN_SPREAD_RATIO) / 2 - BUBBLE_HALF_WIDTH_PX)
-      const offsetX = Math.random() * (maxOffset * 2) - maxOffset
-      setReactions(prev => [...prev, { id, emoji, offsetX }])
+      const origin = findCardAnchor(data.fromPlayerId, 'top')
+      if (!origin) return
 
-      setTimeout(() => {
+      const id = ++nextIdRef.current
+      const drift = (Math.random() - 0.5) * DRIFT_RANGE_PX
+      setReactions(prev => [...prev, { id, emoji, x: origin.x, y: origin.y, drift }])
+
+      window.setTimeout(() => {
         setReactions(prev => prev.filter(r => r.id !== id))
       }, REACTION_DURATION_MS)
     }
@@ -44,7 +53,11 @@ export default function ReactionOverlay() {
         <div
           key={r.id}
           className="reaction-bubble"
-          style={{ left: `calc(50% + ${r.offsetX}px)` }}
+          style={{
+            left: `${r.x}px`,
+            top: `${r.y}px`,
+            ['--drift' as string]: `${r.drift}px`,
+          }}
         >
           {r.emoji}
         </div>
