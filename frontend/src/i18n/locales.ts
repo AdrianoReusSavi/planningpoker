@@ -80,6 +80,7 @@ const locales = {
     'reaction.question': 'Interrogação',
     'reaction.laugh': 'Risada',
     'reaction.cry': 'Choro',
+    'reaction.coffee': 'Café',
 
     // Throwables
     'throw.title': 'Tacar algo',
@@ -88,6 +89,7 @@ const locales = {
     'throw.heart': 'Coração',
     'throw.confused': 'Não entendi',
     'throw.rocket': 'Foguete',
+    'throw.paper': 'Papel',
 
     // Card Style
     'style.title': 'Personalizar carta',
@@ -208,6 +210,7 @@ const locales = {
     'reaction.question': 'Question',
     'reaction.laugh': 'Laugh',
     'reaction.cry': 'Cry',
+    'reaction.coffee': 'Coffee',
 
     'throw.title': 'Throw something',
     'throw.turtle': 'Taking too long',
@@ -215,6 +218,7 @@ const locales = {
     'throw.heart': 'Heart',
     'throw.confused': "Didn't get it",
     'throw.rocket': 'Rocket',
+    'throw.paper': 'Paper',
 
     'style.title': 'Customize card',
     'style.cardHint': 'Click to customize your card',
@@ -330,6 +334,7 @@ const locales = {
     'reaction.question': 'Pregunta',
     'reaction.laugh': 'Risa',
     'reaction.cry': 'Llanto',
+    'reaction.coffee': 'Café',
 
     'throw.title': 'Lanzar algo',
     'throw.turtle': 'Está tardando',
@@ -337,6 +342,7 @@ const locales = {
     'throw.heart': 'Corazón',
     'throw.confused': 'No entendí',
     'throw.rocket': 'Cohete',
+    'throw.paper': 'Papel',
 
     'style.title': 'Personalizar tarjeta',
     'style.cardHint': 'Haz clic para personalizar tu tarjeta',

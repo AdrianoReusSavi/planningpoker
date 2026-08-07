@@ -7,6 +7,18 @@ on:
     branches: [master]
 
 jobs:
+  catalogs:
+    name: Catalogs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: node scripts/check-catalogs.mjs
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
