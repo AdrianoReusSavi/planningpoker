@@ -14,6 +14,7 @@ export const REACTIONS: readonly Reaction[] = [
   { key: 'question', emoji: '❓', titleKey: 'reaction.question' },
   { key: 'laugh', emoji: '😆', titleKey: 'reaction.laugh' },
   { key: 'cry', emoji: '😭', titleKey: 'reaction.cry' },
+  { key: 'coffee', emoji: '☕', titleKey: 'reaction.coffee' },
 ]
 
 export const emojiByKey: Record<string, string> = Object.fromEntries(

@@ -59,6 +59,15 @@ export const THROWABLES: readonly Throwable[] = [
     particleCount: 7,
     arrangement: 'radial',
   },
+  {
+    key: 'paper',
+    display: '🧻',
+    titleKey: 'throw.paper',
+    impactColor: 'rgba(203, 213, 225, 0.85)',
+    particles: ['🧻', '🗑️', '💩', '😡'],
+    particleCount: 7,
+    arrangement: 'radial',
+  },
 ]
 
 export const throwableByKey: Record<string, Throwable> = Object.fromEntries(

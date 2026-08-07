@@ -30,6 +30,7 @@ public class RoomServiceThrowAndReactionTests
     [InlineData("heart")]
     [InlineData("confused")]
     [InlineData("rocket")]
+    [InlineData("paper")]
     public void ValidateThrow_AllowedItems_ReturnsResult(string item)
     {
         var (service, roomId, _, ownerConn, targetPlayerId, _) = Setup();
@@ -43,7 +44,6 @@ public class RoomServiceThrowAndReactionTests
     }
 
     [Theory]
-    [InlineData("paper")]
     [InlineData("coffee")]
     [InlineData("pillow")]
     [InlineData("")]
@@ -144,6 +144,7 @@ public class RoomServiceThrowAndReactionTests
     [InlineData("question")]
     [InlineData("laugh")]
     [InlineData("cry")]
+    [InlineData("coffee")]
     public void ValidateReaction_AllowedKeys_ReturnsResult(string reaction)
     {
         var (service, roomId, _, ownerConn, _, _) = Setup();

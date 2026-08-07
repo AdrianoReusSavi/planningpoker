@@ -11,12 +11,12 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 {
     private static readonly HashSet<string> AllowedReactions = new(StringComparer.Ordinal)
     {
-        "like", "dislike", "thinking", "celebrate", "question", "laugh", "cry"
+        "like", "dislike", "thinking", "celebrate", "question", "laugh", "cry", "coffee"
     };
 
     private static readonly HashSet<string> AllowedThrowItems = new(StringComparer.Ordinal)
     {
-        "turtle", "tomato", "heart", "confused", "rocket"
+        "turtle", "tomato", "heart", "confused", "rocket", "paper"
     };
 
     private static readonly HashSet<string> AllowedPatterns = new(StringComparer.Ordinal)
