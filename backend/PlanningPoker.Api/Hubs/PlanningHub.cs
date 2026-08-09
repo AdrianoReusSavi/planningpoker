@@ -38,13 +38,23 @@ public class PlanningHub(
         return result.PlayerId;
     }
 
-    public async Task WatchRoom(string roomId)
+    public async Task<string?> WatchRoom(string roomId, string name)
     {
-        var snapshot = roomService.WatchRoom(roomId, Context.ConnectionId);
-        if (snapshot is null) return;
+        var result = roomService.WatchRoom(roomId, name, Context.ConnectionId);
+        if (result is null) return null;
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
-        await Clients.Caller.SendAsync("STATE_SYNC", snapshot);
+        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
+        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
+        return result.WatcherId;
+    }
+
+    public async Task UpdateWatcherAppearance(string roomId, string accent, int character)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.UpdateWatcherAppearance(roomId, accent, character, Context.ConnectionId);
+        if (snapshot is not null)
+            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
     }
 
     public async Task<bool> Reconnect(string roomId, string playerId)

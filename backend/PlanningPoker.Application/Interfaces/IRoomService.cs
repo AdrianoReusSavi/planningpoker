@@ -8,7 +8,8 @@ public interface IRoomService
 {
     CreateRoomResult? CreateRoom(string name, string roomName, EstimationOptions votingDeck, string connectionId);
     EnterRoomResult? EnterRoom(string roomId, string name, string connectionId);
-    RoomSnapshot? WatchRoom(string roomId, string connectionId);
+    WatchRoomResult? WatchRoom(string roomId, string name, string connectionId);
+    RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId);
     ReconnectResult? Reconnect(string roomId, string playerId, string connectionId);
     RoomSnapshot? GetRoomSettings(string connectionId);
     RoomSnapshot? TransferOwnership(string roomId, string targetPlayerId, string connectionId);

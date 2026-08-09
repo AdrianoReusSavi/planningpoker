@@ -76,6 +76,25 @@ function localeBlock(lang) {
   return locales.slice(start, end < 0 ? undefined : end)
 }
 
+const serverCharacters = Number(
+  readFileSync(join(root, 'backend/PlanningPoker.Domain/Entities/Room.cs'), 'utf8')
+    .match(/WatcherCharacterCount = (\d+)/)?.[1],
+)
+const clientCharacters = (
+  read('frontend/src/components/WatcherCharacter.tsx').match(/key: '[a-z]+'/g) ?? []
+).length
+
+if (!serverCharacters || !clientCharacters) {
+  throw new Error('could not read the watcher character count from both sides')
+}
+if (serverCharacters !== clientCharacters) {
+  report(
+    'watcher characters: count out of step',
+    `server allows ${serverCharacters}, client draws ${clientCharacters} — `
+    + 'update Room.WatcherCharacterCount or the CHARACTERS list.',
+  )
+}
+
 if (problems.length) {
   console.error(`\ncheck-catalogs: ${problems.length} problem(s)\n`)
   for (const p of problems) console.error(`  ✗ ${p}\n`)
@@ -85,4 +104,5 @@ if (problems.length) {
 const counts = Object.entries(catalogues)
   .map(([kind, { allowlist }]) => `${serverKeys(allowlist).length} ${kind}s`)
   .join(', ')
-console.log(`check-catalogs: ${counts} in step across server, client and ${languages.length} locales`)
+console.log(`check-catalogs: ${counts}, ${clientCharacters} watcher characters`
+  + ` in step across server, client and ${languages.length} locales`)

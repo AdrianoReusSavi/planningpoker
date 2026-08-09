@@ -79,9 +79,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     }
   }, [connection, connected, clearRoom, reconnect, setPlayerId])
 
-  const isWatching = snapshot !== null && (
-    playerId === null || !snapshot.players.some(p => p.id === playerId)
-  )
+  const isWatching = snapshot !== null && playerId !== null
+    && snapshot.watchers.some(w => w.id === playerId)
 
   return (
     <RoomContext.Provider value={{ snapshot, playerId, isWatching, setPlayerId, clearRoom }}>

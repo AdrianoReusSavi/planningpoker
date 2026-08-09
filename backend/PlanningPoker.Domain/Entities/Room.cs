@@ -12,6 +12,7 @@ public class Room
     public required string OwnerId { get; set; }
     public required string RoomName { get; set; }
     public List<User> Users { get; set; } = [];
+    public List<Watcher> Watchers { get; } = [];
     public EstimationOptions VotingDeck { get; set; }
     public RoomPhase Phase { get; private set; } = RoomPhase.Waiting;
 
@@ -20,6 +21,8 @@ public class Room
     private int _roundNumber = 1;
 
     public const int MaxPlayersPerRoom = 10;
+    public const int MaxWatchersPerRoom = 10;
+    public const int WatcherCharacterCount = 6;
     public const int MaxNameLength = 50;
     public const int MaxRoomNameLength = 30;
     public const int MaxVoteLength = 10;
@@ -115,6 +118,78 @@ public class Room
         finally { _lock.ExitWriteLock(); }
     }
 
+    public void AddWatcher(Watcher watcher)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Watchers.Count >= MaxWatchersPerRoom)
+                throw new InvalidOperationException("Room has too many watchers.");
+            Watchers.Add(watcher);
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public bool RemoveWatcher(string watcherId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == watcherId);
+            if (watcher is null) return false;
+            Watchers.Remove(watcher);
+            return true;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public Watcher? FindWatcherByConnectionId(string connectionId)
+    {
+        _lock.EnterReadLock();
+        try { return Watchers.FirstOrDefault(w => w.ConnectionId == connectionId); }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public Watcher? FindWatcherById(string watcherId)
+    {
+        _lock.EnterReadLock();
+        try { return Watchers.FirstOrDefault(w => w.WatcherId == watcherId); }
+        finally { _lock.ExitReadLock(); }
+    }
+
+    public void ReconnectWatcher(string watcherId, string newConnectionId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == watcherId)
+                ?? throw new InvalidOperationException("Watcher not found in room.");
+            watcher.ConnectionId = newConnectionId;
+            watcher.Connected = true;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void SetWatcherAppearance(string watcherId, string accent, int character)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == watcherId)
+                ?? throw new InvalidOperationException("Watcher not found in room.");
+            watcher.Accent = accent;
+            watcher.Character = character;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public (IReadOnlyList<string> Accents, IReadOnlyList<int> Characters) UsedLooks()
+    {
+        _lock.EnterReadLock();
+        try { return (Watchers.Select(w => w.Accent).ToList(), Watchers.Select(w => w.Character).ToList()); }
+        finally { _lock.ExitReadLock(); }
+    }
+
     public bool ToggleBreakRequest(string playerId)
     {
         _lock.EnterWriteLock();
@@ -185,6 +260,9 @@ public class Room
         {
             var user = Users.FirstOrDefault(u => u.ConnectionId == connectionId);
             if (user is not null) user.Connected = false;
+
+            var watcher = Watchers.FirstOrDefault(w => w.ConnectionId == connectionId);
+            if (watcher is not null) watcher.Connected = false;
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -245,6 +323,10 @@ public class Room
                 .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, u.Vote is not null, u.Connected, u.Style, u.Pattern, u.PatternColor))
                 .ToList();
 
+            var watchers = Watchers
+                .Select(w => new WatcherSnapshot(w.WatcherId, w.Username, w.Connected, w.Accent, w.Character))
+                .ToList();
+
             var votes = Phase == RoomPhase.Revealed
                 ? Users
                     .Where(u => u.Vote is not null)
@@ -258,6 +340,7 @@ public class Room
                 VotingDeck.ToString(),
                 Phase.ToString().ToUpperInvariant(),
                 players,
+                watchers,
                 votes,
                 _history.ToList(),
                 _breakRequesters.ToList()
