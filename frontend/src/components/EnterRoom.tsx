@@ -15,28 +15,32 @@ interface EnterRoomProps {
 export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
   const { connection, connected } = useConnection()
   const { setPlayerId } = useRoom()
-  const { enterRoom } = useRoomActions(connection, connected)
+  const { enterRoom, watchRoom } = useRoomActions(connection, connected)
   const { showToast } = useToast()
   const { t } = useI18n()
   const [username, setUsername] = useUsername()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<'play' | 'watch' | null>(null)
 
-  const handleEnter = async () => {
+  const join = async (mode: 'play' | 'watch') => {
     if (!username.trim() || !roomId) return
-    setLoading(true)
+    setLoading(mode)
     try {
-      const playerId = await enterRoom(roomId, username.trim())
-      if (playerId) {
-        setPlayerId(playerId)
+      const id = mode === 'play'
+        ? await enterRoom(roomId, username.trim())
+        : await watchRoom(roomId, username.trim())
+      if (id) {
+        setPlayerId(id)
       } else {
-        showToast(t('enter.notFound'), 'error')
+        showToast(mode === 'play' ? t('enter.notFound') : t('enter.watchFailed'), 'error')
       }
     } catch {
       showToast(t('enter.connectionError'), 'error')
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
   }
+
+  const handleEnter = () => join('play')
 
   return (
     <div className="form-panel">
@@ -52,9 +56,17 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
       <div className="button-row">
         <button
           onClick={handleEnter}
-          disabled={!username.trim() || !roomId || !connected || loading}
+          disabled={!username.trim() || !roomId || !connected || loading !== null}
         >
-          {loading && <LoadingIcon />} {loading ? t('enter.loading') : t('enter.submit')}
+          {loading === 'play' && <LoadingIcon />} {loading === 'play' ? t('enter.loading') : t('enter.submit')}
+        </button>
+        <button
+          className="watch"
+          onClick={() => join('watch')}
+          disabled={!username.trim() || !roomId || !connected || loading !== null}
+          title={t('enter.watchHint')}
+        >
+          {loading === 'watch' && <LoadingIcon />} {loading === 'watch' ? t('enter.loading') : t('enter.watch')}
         </button>
         <button className="secondary" onClick={onGoToCreate}>
           {t('enter.create')}

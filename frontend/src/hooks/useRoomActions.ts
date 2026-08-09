@@ -19,6 +19,18 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const watchRoom = useCallback(
+    (roomId: string, name: string) =>
+      invoke<string>('WatchRoom', roomId, name),
+    [invoke],
+  )
+
+  const updateWatcherAppearance = useCallback(
+    (roomId: string, accent: string, character: number) =>
+      invoke<void>('UpdateWatcherAppearance', roomId, accent, character),
+    [invoke],
+  )
+
   const reconnect = useCallback(
     (roomId: string, playerId: string) =>
       invoke<boolean>('Reconnect', roomId, playerId),
@@ -89,6 +101,8 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
   return {
     createRoom,
     enterRoom,
+    watchRoom,
+    updateWatcherAppearance,
     reconnect,
     submitVote,
     revealVotes,

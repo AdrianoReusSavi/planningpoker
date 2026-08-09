@@ -21,6 +21,8 @@ import ReactionOverlay from './ReactionOverlay'
 import ThrowOverlay from './ThrowOverlay'
 import StyleEditor from './StyleEditor'
 import BreakButton from './BreakButton'
+import WatcherList from './WatcherList'
+import WatcherEditor from './WatcherEditor'
 
 const PLAYER_STYLE_KEY = 'playerStyle'
 const PLAYER_PATTERN_KEY = 'playerPattern'
@@ -48,6 +50,7 @@ export default function Room() {
   const [resetLoading, setResetLoading] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [styleEditorOpen, setStyleEditorOpen] = useState(false)
+  const [watcherEditorOpen, setWatcherEditorOpen] = useState(false)
   const hydratedRoomRef = useRef<string | null>(null)
 
   const roomId = snapshot?.id ?? ''
@@ -70,6 +73,7 @@ export default function Room() {
   }, [snapshot])
 
   const selfPlayer = playerId !== null ? players.find(p => p.id === playerId) : undefined
+  const selfWatcher = playerId !== null ? snapshot?.watchers.find(w => w.id === playerId) : undefined
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
@@ -221,6 +225,11 @@ export default function Room() {
     try { await actions.sendReaction(roomId, key) } catch { /* rate limited */ }
   }, [actions, roomId])
 
+  const changeWatcherLook = useCallback(async (accent: string, character: number) => {
+    if (!roomId) return
+    try { await actions.updateWatcherAppearance(roomId, accent, character) } catch { /* rate limited */ }
+  }, [actions, roomId])
+
   const throwItem = useCallback(async (targetId: string, itemKey: string) => {
     if (!roomId) return
     try { await actions.throwItem(roomId, targetId, itemKey) } catch { /* rate limited */ }
@@ -240,7 +249,7 @@ export default function Room() {
   }, [actions, roomId])
 
   useEffect(() => {
-    const sidebarVisible = !isWatching && !miniViewOpen
+    const sidebarVisible = !miniViewOpen
     document.body.classList.toggle('has-room-sidebar', sidebarVisible)
     return () => { document.body.classList.remove('has-room-sidebar') }
   }, [isWatching, miniViewOpen])
@@ -276,6 +285,7 @@ export default function Room() {
           status={status}
           leaveLoading={leaveLoading}
           historyCount={snapshot?.history?.length ?? 0}
+          watcherCount={snapshot?.watchers?.length ?? 0}
           onCopyLink={copyLink}
           onLeave={requestLeave}
           onOpenHistory={() => setHistoryOpen(true)}
@@ -308,6 +318,13 @@ export default function Room() {
             onThrow={throwItem}
           />
 
+          <WatcherList
+            watchers={snapshot?.watchers ?? []}
+            currentPlayerId={playerId}
+            onThrow={throwItem}
+            onEditSelf={() => setWatcherEditorOpen(true)}
+          />
+
           <div className="room-stage-center">
             <VoteSummary
               flipped={flipped}
@@ -317,9 +334,9 @@ export default function Room() {
           </div>
         </div>
 
-        {!isWatching && !miniViewOpen && (
-          <aside className="room-sidebar">
-            <div className="sidebar-section sidebar-section-controls">
+        {!miniViewOpen && (
+          <aside className={`room-sidebar ${isWatching ? 'watching' : ''}`}>
+            {!isWatching && <div className="sidebar-section sidebar-section-controls">
               <VotingControls
                 isLeader={isLeader}
                 flipped={flipped}
@@ -330,18 +347,18 @@ export default function Room() {
                 onReveal={revealVotes}
                 onReset={resetVotes}
               />
-            </div>
-            <div className="sidebar-section sidebar-section-deck">
+            </div>}
+            {!isWatching && <div className="sidebar-section sidebar-section-deck">
               <VotingDeck
                 cards={votingDeck}
                 selectedVote={vote}
                 onVote={submitVote}
                 disabled={flipped}
               />
-            </div>
+            </div>}
             <div className="sidebar-section sidebar-section-extras">
               <ReactionBar onSend={sendReaction} />
-              <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
+              {!isWatching && <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />}
             </div>
           </aside>
         )}
@@ -355,6 +372,20 @@ export default function Room() {
 
       <ReactionOverlay />
       <ThrowOverlay />
+
+      {watcherEditorOpen && selfWatcher && (
+        <WatcherEditor
+          initialAccent={selfWatcher.accent}
+          initialCharacter={selfWatcher.character}
+          onSave={(accent, character) => {
+            setWatcherEditorOpen(false)
+            if (accent !== selfWatcher.accent || character !== selfWatcher.character) {
+              changeWatcherLook(accent, character)
+            }
+          }}
+          onCancel={() => setWatcherEditorOpen(false)}
+        />
+      )}
 
       {styleEditorOpen && selfPlayer && (
         <StyleEditor

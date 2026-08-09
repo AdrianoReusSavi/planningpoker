@@ -8,6 +8,14 @@ export interface PlayerSnapshot {
   patternColor: string | null
 }
 
+export interface WatcherSnapshot {
+  id: string
+  name: string
+  connected: boolean
+  accent: string
+  character: number
+}
+
 export interface RoundRecord {
   round: number
   votes: Record<string, string>
@@ -21,6 +29,7 @@ export interface RoomSnapshot {
   votingDeck: string
   phase: 'WAITING' | 'VOTING' | 'REVEALED'
   players: PlayerSnapshot[]
+  watchers: WatcherSnapshot[]
   votes: Record<string, string>
   history: RoundRecord[]
   breakRequesters: string[]

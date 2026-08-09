@@ -76,18 +76,71 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return new EnterRoomResult(roomId, playerId, room.ToSnapshot());
     }
 
-    public RoomSnapshot? WatchRoom(string roomId, string connectionId)
+    public WatchRoomResult? WatchRoom(string roomId, string name, string connectionId)
     {
-        if (string.IsNullOrWhiteSpace(roomId))
+        if (!ValidateName(name) || string.IsNullOrWhiteSpace(roomId))
             return null;
 
         var room = repository.GetRoom(roomId);
         if (room is null)
             return null;
 
+        if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
+            return null;
+
+        if (repository.HasConnection(connectionId))
+            return null;
+
+        var watcherId = Guid.NewGuid().ToString();
+        var (accents, characters) = room.UsedLooks();
+        room.AddWatcher(new Watcher
+        {
+            WatcherId = watcherId,
+            ConnectionId = connectionId,
+            Username = name.Trim(),
+            Accent = NextAccent(accents),
+            Character = NextCharacter(characters),
+        });
         repository.MapConnection(connectionId, roomId);
+
+        return new WatchRoomResult(roomId, watcherId, room.ToSnapshot());
+    }
+
+    public RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId) || accent is null || !SolidColorRegex().IsMatch(accent))
+            return null;
+
+        if (character < 0 || character >= Room.WatcherCharacterCount)
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var watcher = room.FindWatcherByConnectionId(connectionId);
+        if (watcher is null)
+            return null;
+
+        room.SetWatcherAppearance(watcher.WatcherId, accent, character);
         return room.ToSnapshot();
     }
+
+    private static string NextAccent(IReadOnlyList<string> taken) =>
+        WatcherAccents.FirstOrDefault(a => !taken.Contains(a)) ?? WatcherAccents[taken.Count % WatcherAccents.Length];
+
+    private static int NextCharacter(IReadOnlyList<int> taken)
+    {
+        for (var i = 0; i < Room.WatcherCharacterCount; i++)
+            if (!taken.Contains(i)) return i;
+        return taken.Count % Room.WatcherCharacterCount;
+    }
+
+    private static readonly string[] WatcherAccents =
+    [
+        "#f472b6", "#38bdf8", "#fbbf24", "#4ade80", "#a78bfa",
+        "#fb923c", "#22d3ee", "#f87171", "#a3e635", "#e879f9",
+    ];
 
     public ReconnectResult? Reconnect(string roomId, string playerId, string connectionId)
     {
@@ -100,7 +153,18 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
         var user = room.FindByPlayerId(playerId);
         if (user is null)
-            return null;
+        {
+            var watcher = room.FindWatcherById(playerId);
+            if (watcher is null)
+                return null;
+
+            var oldWatcherConnection = watcher.ConnectionId;
+            repository.UnmapConnection(oldWatcherConnection);
+            room.ReconnectWatcher(playerId, connectionId);
+            repository.MapConnection(connectionId, roomId);
+
+            return new ReconnectResult(roomId, oldWatcherConnection, room.ToSnapshot());
+        }
 
         var oldConnectionId = user.ConnectionId;
         repository.UnmapConnection(oldConnectionId);
@@ -287,11 +351,12 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var sender = room.FindByConnectionId(connectionId);
-        if (sender is null)
+        var senderId = room.FindByConnectionId(connectionId)?.PlayerId
+            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        if (senderId is null)
             return null;
 
-        return new ReactionResult(roomId, reaction, sender.PlayerId);
+        return new ReactionResult(roomId, reaction, senderId);
     }
 
     public ThrowResult? ValidateThrow(string roomId, string targetPlayerId, string item, string connectionId)
@@ -304,14 +369,15 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var sender = room.FindByConnectionId(connectionId);
-        if (sender is null || sender.PlayerId == targetPlayerId)
+        var senderId = room.FindByConnectionId(connectionId)?.PlayerId
+            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        if (senderId is null || senderId == targetPlayerId)
             return null;
 
-        if (room.FindByPlayerId(targetPlayerId) is null)
+        if (room.FindByPlayerId(targetPlayerId) is null && room.FindWatcherById(targetPlayerId) is null)
             return null;
 
-        return new ThrowResult(roomId, sender.PlayerId, targetPlayerId, item);
+        return new ThrowResult(roomId, senderId, targetPlayerId, item);
     }
 
     public RoomSnapshot? UpdateStyle(string roomId, string? style, string? pattern, string? patternColor, string connectionId)
@@ -359,7 +425,14 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         repository.UnmapConnection(connectionId);
 
         if (user is null)
-            return new LeaveResult(null, roomId, null);
+        {
+            var watcher = room.FindWatcherByConnectionId(connectionId);
+            if (watcher is null)
+                return new LeaveResult(null, roomId, null);
+
+            room.RemoveWatcher(watcher.WatcherId);
+            return new LeaveResult(watcher.WatcherId, roomId, room.ToSnapshot());
+        }
 
         room.SetDisconnected(connectionId);
         var removal = PermanentlyRemovePlayer(roomId, user.PlayerId);
@@ -377,14 +450,15 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var user = room.FindByConnectionId(connectionId);
-        if (user is null)
+        var participantId = room.FindByConnectionId(connectionId)?.PlayerId
+            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        if (participantId is null)
             return null;
 
         room.SetDisconnected(connectionId);
         repository.UnmapConnection(connectionId);
 
-        return new DisconnectResult(roomId, user.PlayerId, room.ToSnapshot());
+        return new DisconnectResult(roomId, participantId, room.ToSnapshot());
     }
 
     public RemovalResult PermanentlyRemovePlayer(string roomId, string playerId)
@@ -394,7 +468,17 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             return new RemovalResult(true, null);
 
         var user = room.FindByPlayerId(playerId);
-        if (user is null || user.Connected)
+        if (user is null)
+        {
+            var watcher = room.FindWatcherById(playerId);
+            if (watcher is null || watcher.Connected)
+                return new RemovalResult(false, null);
+
+            room.RemoveWatcher(playerId);
+            return new RemovalResult(false, room.ToSnapshot());
+        }
+
+        if (user.Connected)
             return new RemovalResult(false, null);
 
         room.RemoveUser(playerId);

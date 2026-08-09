@@ -1,6 +1,6 @@
 import { useI18n } from '../contexts/I18nContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon, ExternalLinkIcon, SunIcon, MoonIcon } from './Icons'
+import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon, ExternalLinkIcon, SunIcon, MoonIcon, EyeIcon } from './Icons'
 import LocalePicker from './LocalePicker'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
@@ -10,13 +10,14 @@ interface RoomHeaderProps {
   status: ConnectionStatus
   leaveLoading: boolean
   historyCount: number
+  watcherCount: number
   onCopyLink: () => void
   onLeave: () => void
   onOpenHistory: () => void
   onOpenMiniView: () => void
 }
 
-export default function RoomHeader({ roomName, status, leaveLoading, historyCount, onCopyLink, onLeave, onOpenHistory, onOpenMiniView }: RoomHeaderProps) {
+export default function RoomHeader({ roomName, status, leaveLoading, historyCount, watcherCount, onCopyLink, onLeave, onOpenHistory, onOpenMiniView }: RoomHeaderProps) {
   const { t } = useI18n()
   const { isDark, toggle } = useTheme()
 
@@ -30,6 +31,12 @@ export default function RoomHeader({ roomName, status, leaveLoading, historyCoun
       <div className="room-header-left">
         <h2>{roomName}</h2>
         <span className={`status-tag ${statusClassName}`}>{t(statusKey)}</span>
+        {watcherCount > 0 && (
+          <span className="status-tag tag-default watching-tag">
+            <EyeIcon />
+            {t('watch.count', { count: String(watcherCount) })}
+          </span>
+        )}
       </div>
       <div className="room-header-right">
         <LocalePicker />
