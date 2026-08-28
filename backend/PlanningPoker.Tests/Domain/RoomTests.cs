@@ -29,6 +29,15 @@ public class RoomTests
         return room;
     }
 
+    private static Watcher NewWatcher(string watcherId) => new()
+    {
+        WatcherId = watcherId,
+        ConnectionId = $"conn-{watcherId}",
+        Username = "Observer",
+        Accent = "#f472b6",
+        Character = 0
+    };
+
     #region State Machine Transitions
 
     [Fact]
@@ -369,6 +378,53 @@ public class RoomTests
 
         var snapshot = room.ToSnapshot();
         Assert.Equal("player-2", snapshot.OwnerId);
+    }
+
+    [Fact]
+    public void TransferOwnership_ToConnectedWatcher_TransfersSuccessfully()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+
+        room.TransferOwnership("owner", "watcher-1");
+
+        Assert.Equal("watcher-1", room.ToSnapshot().OwnerId);
+    }
+
+    [Fact]
+    public void TransferOwnership_ToDisconnectedWatcher_Throws()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+        room.SetDisconnected("conn-watcher-1");
+
+        Assert.Throws<InvalidOperationException>(() => room.TransferOwnership("owner", "watcher-1"));
+    }
+
+    [Fact]
+    public void TransferOwnerIfNeeded_NoConnectedPlayer_PrefersConnectedWatcher()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+        room.SetDisconnected("conn-1");
+        room.RemoveUser("owner");
+
+        room.TransferOwnerIfNeeded("owner");
+
+        Assert.Equal("watcher-1", room.ToSnapshot().OwnerId);
+    }
+
+    [Fact]
+    public void TransferOwnerIfNeeded_WatcherOwnerLeaves_ReturnsCrownToThePlayers()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+        room.TransferOwnership("owner", "watcher-1");
+        room.RemoveWatcher("watcher-1");
+
+        room.TransferOwnerIfNeeded("watcher-1");
+
+        Assert.Equal("owner", room.ToSnapshot().OwnerId);
     }
 
     [Fact]

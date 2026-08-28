@@ -1101,6 +1101,39 @@ body.has-room-sidebar .room-banners {
   filter: grayscale(1);
 }
 
+.watcher-action {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.watcher-row:hover .watcher-action,
+.watcher-action:focus-visible {
+  opacity: 1;
+}
+
+.watcher-action.transfer {
+  background: #f59e0b;
+}
+
+.watcher-action.transfer:hover {
+  background: #d97706;
+}
+
 .watcher-row .throw-popover {
   left: calc(100% + 8px);
   right: auto;

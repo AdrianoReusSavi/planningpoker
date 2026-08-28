@@ -6,11 +6,12 @@ import WatcherCharacter, { CHARACTER_COUNT } from './WatcherCharacter'
 interface WatcherEditorProps {
   initialAccent: string
   initialCharacter: number
+  isLeader: boolean
   onSave: (accent: string, character: number) => void
   onCancel: () => void
 }
 
-export default function WatcherEditor({ initialAccent, initialCharacter, onSave, onCancel }: WatcherEditorProps) {
+export default function WatcherEditor({ initialAccent, initialCharacter, isLeader, onSave, onCancel }: WatcherEditorProps) {
   const { t } = useI18n()
   const [accent, setAccent] = useState(initialAccent)
   const [character, setCharacter] = useState(initialCharacter)
@@ -23,7 +24,7 @@ export default function WatcherEditor({ initialAccent, initialCharacter, onSave,
         <div className="watcher-editor-preview">
           <span className="watcher-chip self" style={{ ['--watcher-accent' as string]: accent }}>
             <span className="watcher-peek" aria-hidden="true">
-              <WatcherCharacter character={character} />
+              <WatcherCharacter character={character} hat={isLeader} />
             </span>
             <span className="watcher-name">{t('watch.previewName')}</span>
           </span>

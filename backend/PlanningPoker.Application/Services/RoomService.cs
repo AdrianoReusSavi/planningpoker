@@ -194,13 +194,13 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var caller = room.FindByConnectionId(connectionId);
-        if (caller is null)
+        var callerId = ParticipantId(room, connectionId);
+        if (callerId is null)
             return null;
 
         try
         {
-            room.TransferOwnership(caller.PlayerId, targetPlayerId);
+            room.TransferOwnership(callerId, targetPlayerId);
             return room.ToSnapshot();
         }
         catch (InvalidOperationException) { return null; }
@@ -238,8 +238,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var user = room.FindByConnectionId(connectionId);
-        if (user is null || room.OwnerId != user.PlayerId)
+        if (!IsOwnedBy(room, connectionId))
             return null;
 
         try
@@ -259,8 +258,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var user = room.FindByConnectionId(connectionId);
-        if (user is null || room.OwnerId != user.PlayerId)
+        if (!IsOwnedBy(room, connectionId))
             return null;
 
         try
@@ -282,11 +280,11 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var caller = room.FindByConnectionId(connectionId);
-        if (caller is null || room.OwnerId != caller.PlayerId)
+        var callerId = ParticipantId(room, connectionId);
+        if (callerId is null || room.OwnerId != callerId)
             return null;
 
-        if (caller.PlayerId == targetPlayerId)
+        if (callerId == targetPlayerId)
             return null;
 
         var target = room.FindByPlayerId(targetPlayerId);
@@ -297,7 +295,11 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         repository.UnmapConnection(targetConnectionId);
         room.RemoveUser(targetPlayerId);
 
-        return new KickResult(roomId, targetConnectionId, room.ToSnapshot());
+        var snapshot = room.ToSnapshot();
+        if (room.IsEmpty)
+            repository.TryRemoveRoom(roomId);
+
+        return new KickResult(roomId, targetConnectionId, snapshot);
     }
 
     // ── Break requests ──
@@ -332,8 +334,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var caller = room.FindByConnectionId(connectionId);
-        if (caller is null || room.OwnerId != caller.PlayerId)
+        if (!IsOwnedBy(room, connectionId))
             return null;
 
         room.ClearBreakRequests();
@@ -351,8 +352,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var senderId = room.FindByConnectionId(connectionId)?.PlayerId
-            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        var senderId = ParticipantId(room, connectionId);
         if (senderId is null)
             return null;
 
@@ -369,8 +369,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var senderId = room.FindByConnectionId(connectionId)?.PlayerId
-            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        var senderId = ParticipantId(room, connectionId);
         if (senderId is null || senderId == targetPlayerId)
             return null;
 
@@ -431,7 +430,8 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
                 return new LeaveResult(null, roomId, null);
 
             room.RemoveWatcher(watcher.WatcherId);
-            return new LeaveResult(watcher.WatcherId, roomId, room.ToSnapshot());
+            var watcherRemoval = FinishRemoval(room, roomId, watcher.WatcherId);
+            return new LeaveResult(watcher.WatcherId, roomId, watcherRemoval.Snapshot);
         }
 
         room.SetDisconnected(connectionId);
@@ -450,8 +450,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var participantId = room.FindByConnectionId(connectionId)?.PlayerId
-            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+        var participantId = ParticipantId(room, connectionId);
         if (participantId is null)
             return null;
 
@@ -475,14 +474,28 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
                 return new RemovalResult(false, null);
 
             room.RemoveWatcher(playerId);
-            return new RemovalResult(false, room.ToSnapshot());
+            return FinishRemoval(room, roomId, playerId);
         }
 
         if (user.Connected)
             return new RemovalResult(false, null);
 
         room.RemoveUser(playerId);
-        room.TransferOwnerIfNeeded(playerId);
+        return FinishRemoval(room, roomId, playerId);
+    }
+
+    // ── Private helpers ──
+
+    private static string? ParticipantId(Room room, string connectionId)
+        => room.FindByConnectionId(connectionId)?.PlayerId
+            ?? room.FindWatcherByConnectionId(connectionId)?.WatcherId;
+
+    private static bool IsOwnedBy(Room room, string connectionId)
+        => ParticipantId(room, connectionId) is { } participantId && room.OwnerId == participantId;
+
+    private RemovalResult FinishRemoval(Room room, string roomId, string departedParticipantId)
+    {
+        room.TransferOwnerIfNeeded(departedParticipantId);
 
         if (room.IsEmpty)
         {
@@ -492,8 +505,6 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
         return new RemovalResult(false, room.ToSnapshot());
     }
-
-    // ── Private helpers ──
 
     private static bool IsValidStyle(string style)
     {
