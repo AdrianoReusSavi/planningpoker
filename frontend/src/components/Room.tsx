@@ -188,10 +188,12 @@ export default function Room() {
   }
 
   const requestTransfer = (targetId: string) => {
-    const target = players.find(u => u.id === targetId)
+    const targetName = players.find(u => u.id === targetId)?.username
+      ?? snapshot?.watchers.find(w => w.id === targetId)?.name
+      ?? ''
     setModal({
       title: t('modal.transfer.title'),
-      message: t('modal.transfer.message', { name: target?.username ?? '' }),
+      message: t('modal.transfer.message', { name: targetName }),
       confirmText: t('modal.transfer.confirm'),
       onConfirm: async () => {
         setModal(null)
@@ -321,7 +323,10 @@ export default function Room() {
           <WatcherList
             watchers={snapshot?.watchers ?? []}
             currentPlayerId={playerId}
+            ownerId={snapshot?.ownerId ?? ''}
+            isLeader={isLeader}
             onThrow={throwItem}
+            onTransfer={requestTransfer}
             onEditSelf={() => setWatcherEditorOpen(true)}
           />
 
@@ -336,7 +341,7 @@ export default function Room() {
 
         {!miniViewOpen && (
           <aside className={`room-sidebar ${isWatching ? 'watching' : ''}`}>
-            {!isWatching && <div className="sidebar-section sidebar-section-controls">
+            {(!isWatching || isLeader) && <div className="sidebar-section sidebar-section-controls">
               <VotingControls
                 isLeader={isLeader}
                 flipped={flipped}
@@ -377,6 +382,7 @@ export default function Room() {
         <WatcherEditor
           initialAccent={selfWatcher.accent}
           initialCharacter={selfWatcher.character}
+          isLeader={isLeader}
           onSave={(accent, character) => {
             setWatcherEditorOpen(false)
             if (accent !== selfWatcher.accent || character !== selfWatcher.character) {

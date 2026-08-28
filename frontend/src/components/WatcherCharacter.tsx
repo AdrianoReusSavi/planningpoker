@@ -93,6 +93,15 @@ const CHARACTERS = [
   },
 ] as const
 
+const LEADER_HAT = (
+  <>
+    <path d="M21 9.8 L18.8 2.4 Q32 0.4 45.2 2.4 L43 9.8 Z" fill="#3f4451" stroke={OUTLINE} strokeWidth="1" strokeLinejoin="round" />
+    <path d="M32 2.8 L32.8 4.7 L34.8 4.9 L33.3 6.2 L33.7 8.2 L32 7 L30.3 8.2 L30.7 6.2 L29.2 4.9 L31.2 4.7 Z" fill="#facc15" />
+    <rect x="20" y="9" width="24" height="4.2" rx="1.3" fill="#1f2430" />
+    <path d="M18.5 12.8 Q32 18.4 45.5 12.8 Q32 15.6 18.5 12.8 Z" fill="#12151d" />
+  </>
+)
+
 export const CHARACTER_COUNT = CHARACTERS.length
 
 export const EYE_CENTER = { x: 35, y: 22 }
@@ -101,13 +110,15 @@ export const PUPIL_RANGE = 1.6
 interface WatcherCharacterProps {
   character: number
   size?: number
+  hat?: boolean
 }
 
-export default function WatcherCharacter({ character, size = 40 }: WatcherCharacterProps) {
+export default function WatcherCharacter({ character, size = 40, hat = false }: WatcherCharacterProps) {
   const chosen = CHARACTERS[((character % CHARACTERS.length) + CHARACTERS.length) % CHARACTERS.length]
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} aria-hidden="true" focusable="false">
       {chosen.body}
+      {hat && LEADER_HAT}
     </svg>
   )
 }

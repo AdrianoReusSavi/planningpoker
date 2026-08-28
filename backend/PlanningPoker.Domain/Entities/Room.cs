@@ -274,25 +274,37 @@ public class Room
         {
             if (OwnerId != currentOwnerId)
                 throw new InvalidOperationException("Only the current owner can transfer ownership.");
-            var target = Users.FirstOrDefault(u => u.PlayerId == newOwnerId)
-                ?? throw new InvalidOperationException("Target player not found in room.");
-            if (!target.Connected)
-                throw new InvalidOperationException("Cannot transfer ownership to a disconnected player.");
+
+            var targetConnected = ParticipantConnected(newOwnerId)
+                ?? throw new InvalidOperationException("Target participant not found in room.");
+            if (!targetConnected)
+                throw new InvalidOperationException("Cannot transfer ownership to a disconnected participant.");
+
             OwnerId = newOwnerId;
         }
         finally { _lock.ExitWriteLock(); }
     }
 
-    public void TransferOwnerIfNeeded(string departingPlayerId)
+    public void TransferOwnerIfNeeded(string departingParticipantId)
     {
         _lock.EnterWriteLock();
         try
         {
-            if (OwnerId != departingPlayerId || Users.Count == 0) return;
-            OwnerId = (Users.FirstOrDefault(u => u.Connected) ?? Users.First()).PlayerId;
+            if (OwnerId != departingParticipantId) return;
+
+            var successor = Users.FirstOrDefault(u => u.Connected)?.PlayerId
+                ?? Watchers.FirstOrDefault(w => w.Connected)?.WatcherId
+                ?? Users.FirstOrDefault()?.PlayerId
+                ?? Watchers.FirstOrDefault()?.WatcherId;
+
+            if (successor is not null) OwnerId = successor;
         }
         finally { _lock.ExitWriteLock(); }
     }
+
+    private bool? ParticipantConnected(string participantId)
+        => Users.FirstOrDefault(u => u.PlayerId == participantId)?.Connected
+            ?? Watchers.FirstOrDefault(w => w.WatcherId == participantId)?.Connected;
 
     public bool IsEmpty
     {

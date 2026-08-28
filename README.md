@@ -43,7 +43,8 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 - Throwables: tap another player's card to throw a turtle 🐢, tomato 🍅, heart ❤️, "didn't get it" 🤔 or rocket 🚀 — parabolic flight, themed impact ring and emoji-particle burst (heart particles trace a heart curve)
 - Anonymous emoji reactions that float upward from the sender's own card
 - Anonymous coffee break counter with clear-all for the room owner
-- Kick player and transfer ownership
+- Watch mode: join without taking a seat as a customizable character (colour + face) that peeks in from the side of the table
+- Kick player and transfer leadership to anyone in the room — a watcher who holds it wears the crown on their character and drives reveal/reset from the bench
 - Customizable card style per player (color, gradient, pattern) persisted in localStorage
 - Celebration animation when all votes match
 - Mini-view popup with deck, controls, reactions and break button — synced via BroadcastChannel

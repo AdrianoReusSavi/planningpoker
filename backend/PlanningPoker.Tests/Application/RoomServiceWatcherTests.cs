@@ -379,4 +379,107 @@ public class RoomServiceWatcherTests
 
         Assert.Null(service.WatchRoom(roomId, "One Too Many", "conn-extra"));
     }
+
+    [Fact]
+    public void TransferOwnership_ToAConnectedWatcher_MovesTheCrown()
+    {
+        var (service, roomId, ownerId, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+
+        var snapshot = service.TransferOwnership(roomId, watch!.WatcherId, ownerConn);
+
+        Assert.NotNull(snapshot);
+        Assert.Equal(watch.WatcherId, snapshot!.OwnerId);
+        Assert.NotEqual(ownerId, snapshot.OwnerId);
+    }
+
+    [Fact]
+    public void TransferOwnership_ToADisconnectedWatcher_IsRejected()
+    {
+        var (service, roomId, ownerId, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        service.HandleDisconnect("conn-watch");
+
+        Assert.Null(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+        Assert.Equal(ownerId, service.GetRoomSettings(ownerConn)!.OwnerId);
+    }
+
+    [Fact]
+    public void WatcherLeader_RevealsAndResetsTheRound()
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+        Assert.NotNull(service.SubmitVote(roomId, "5", ownerConn));
+
+        Assert.Equal("REVEALED", service.RevealVotes(roomId, "conn-watch")?.Phase);
+        Assert.Equal("VOTING", service.ResetVotes(roomId, "conn-watch")?.Phase);
+    }
+
+    [Fact]
+    public void Watcher_WithoutTheCrown_CannotRevealTheRound()
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+        service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.SubmitVote(roomId, "5", ownerConn));
+
+        Assert.Null(service.RevealVotes(roomId, "conn-watch"));
+        Assert.Equal("VOTING", service.GetRoomSettings(ownerConn)!.Phase);
+    }
+
+    [Fact]
+    public void WatcherLeader_ClearsBreakRequests()
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+        Assert.NotNull(service.ToggleBreakRequest(roomId, ownerConn));
+
+        Assert.Empty(service.ClearBreakRequests(roomId, "conn-watch")!.BreakRequesters);
+    }
+
+    [Fact]
+    public void WatcherLeader_KicksAPlayer()
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+        var player = service.EnterRoom(roomId, "Player", "conn-player");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+
+        var kick = service.KickPlayer(roomId, player!.PlayerId, "conn-watch");
+
+        Assert.NotNull(kick);
+        Assert.DoesNotContain(kick!.Snapshot.Players, p => p.Id == player.PlayerId);
+    }
+
+    [Fact]
+    public void WatcherLeader_KickingTheLastPlayer_FreesTheRoom()
+    {
+        var (service, roomId, ownerId, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+
+        Assert.NotNull(service.KickPlayer(roomId, ownerId, "conn-watch"));
+        Assert.Null(service.GetRoomSettings("conn-watch"));
+    }
+
+    [Fact]
+    public void WatcherLeader_HandsTheCrownBackToAPlayer()
+    {
+        var (service, roomId, ownerId, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+
+        Assert.Equal(ownerId, service.TransferOwnership(roomId, ownerId, "conn-watch")?.OwnerId);
+    }
+
+    [Fact]
+    public void WatcherLeader_LeavingHandsTheCrownToAPlayer()
+    {
+        var (service, roomId, ownerId, ownerConn) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
+
+        Assert.Equal(ownerId, service.LeaveRoom(roomId, "conn-watch")?.Snapshot?.OwnerId);
+    }
 }

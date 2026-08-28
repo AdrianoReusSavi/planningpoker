@@ -4,18 +4,24 @@ import { useI18n } from '../contexts/I18nContext'
 import { useEyesFollowPointer } from '../hooks/useEyesFollowPointer'
 import WatcherCharacter from './WatcherCharacter'
 import ThrowPopover from './ThrowPopover'
+import { CrownIcon } from './Icons'
 import type { WatcherSnapshot } from '../types/room'
 
 interface WatcherListProps {
   watchers: WatcherSnapshot[]
   currentPlayerId: string | null
+  ownerId: string
+  isLeader: boolean
   onThrow: (targetId: string, itemKey: string) => void
+  onTransfer: (targetId: string) => void
   onEditSelf: () => void
 }
 
 const VISIBLE_ROWS = 6
 
-export default function WatcherList({ watchers, currentPlayerId, onThrow, onEditSelf }: WatcherListProps) {
+export default function WatcherList({
+  watchers, currentPlayerId, ownerId, isLeader, onThrow, onTransfer, onEditSelf,
+}: WatcherListProps) {
   const { t } = useI18n()
   const { connection } = useConnection()
   const [throwTargetId, setThrowTargetId] = useState<string | null>(null)
@@ -54,7 +60,9 @@ export default function WatcherList({ watchers, currentPlayerId, onThrow, onEdit
       <ul>
         {shown.map(w => {
           const isSelf = w.id === currentPlayerId
+          const isOwner = w.id === ownerId
           const canThrow = !isSelf && currentPlayerId !== null && w.connected
+          const canTransfer = isLeader && !isOwner && w.connected
           return (
             <li key={w.id} className="watcher-row">
               <button
@@ -77,10 +85,26 @@ export default function WatcherList({ watchers, currentPlayerId, onThrow, onEdit
                 }}
               >
                 <span className={`watcher-peek ${throwingId === w.id ? 'throwing' : ''}`} aria-hidden="true">
-                  <WatcherCharacter character={w.character} />
+                  <WatcherCharacter character={w.character} hat={isOwner} />
                 </span>
-                <span className="watcher-name">{w.name}</span>
+                <span
+                  className="watcher-name"
+                  title={isOwner ? `${w.name} ${t('card.ownerSuffix')}` : undefined}
+                >
+                  {w.name}
+                </span>
               </button>
+
+              {canTransfer && (
+                <button
+                  type="button"
+                  className="watcher-action transfer"
+                  onClick={() => onTransfer(w.id)}
+                  title={t('card.transferTo', { name: w.name })}
+                >
+                  <CrownIcon />
+                </button>
+              )}
 
               {throwTargetId === w.id && (
                 <ThrowPopover
