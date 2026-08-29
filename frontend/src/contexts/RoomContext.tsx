@@ -4,6 +4,8 @@ import { useRoomActions } from '../hooks/useRoomActions'
 import { useSessionStorage } from '../hooks/useSessionStorage'
 import type { RoomSnapshot } from '../types/room'
 
+const REJOIN_RETRY_MS = 2000
+
 interface RoomContextValue {
   snapshot: RoomSnapshot | null
   playerId: string | null
@@ -27,6 +29,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const [playerId, setPlayerId] = useSessionStorage('playerId')
   const [, setRoomId] = useSessionStorage('roomId')
   const reconnectAttempted = useRef(false)
+  const [rejoinAttempt, setRejoinAttempt] = useState(0)
+  const rejoinTimer = useRef<number | null>(null)
 
   const clearRoom = useCallback(() => {
     setSnapshot(null)
@@ -77,18 +81,23 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    const tryAgainLater = () => {
+      reconnectAttempted.current = false
+      rejoinTimer.current = window.setTimeout(() => setRejoinAttempt((n) => n + 1), REJOIN_RETRY_MS)
+    }
+
     reconnect(savedRoomId, savedPlayerId)
-      .then((success) => {
-        if (success) {
-          setPlayerId(savedPlayerId)
-        } else {
-          clearRoom()
-        }
+      .then((stillInTheRoom) => {
+        if (stillInTheRoom) setPlayerId(savedPlayerId)
+        else if (stillInTheRoom === false) clearRoom()
+        else tryAgainLater()
       })
-      .catch(() => {
-        clearRoom()
-      })
-  }, [connection, connected, clearRoom, reconnect, setPlayerId])
+      .catch(tryAgainLater)
+
+    return () => {
+      if (rejoinTimer.current !== null) window.clearTimeout(rejoinTimer.current)
+    }
+  }, [connection, connected, rejoinAttempt, clearRoom, reconnect, setPlayerId])
 
   const isWatching = snapshot !== null && playerId !== null
     && snapshot.watchers.some(w => w.id === playerId)

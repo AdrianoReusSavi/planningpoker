@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { HubConnectionState, type HubConnection } from '@microsoft/signalr'
-import { getConnection, startConnection } from '../services/signalr'
+import { getConnection, nextRetryDelay, startConnection } from '../services/signalr'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
@@ -8,6 +8,7 @@ interface ConnectionContextValue {
   connection: HubConnection
   connected: boolean
   status: ConnectionStatus
+  retryNow: () => void
 }
 
 const ConnectionContext = createContext<ConnectionContextValue | null>(null)
@@ -16,24 +17,64 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>('connecting')
   const connection = getConnection()
   const started = useRef(false)
+  const retryTimer = useRef<number | null>(null)
+  const failedAttempts = useRef(0)
+
+  const connect = useCallback(() => {
+    if (retryTimer.current !== null) {
+      window.clearTimeout(retryTimer.current)
+      retryTimer.current = null
+    }
+    if (connection.state !== HubConnectionState.Disconnected) return
+
+    setStatus(failedAttempts.current === 0 ? 'connecting' : 'reconnecting')
+    startConnection()
+      .then(() => {
+        failedAttempts.current = 0
+        setStatus('connected')
+      })
+      .catch(() => {
+        setStatus('reconnecting')
+        const delay = nextRetryDelay(failedAttempts.current)
+        failedAttempts.current += 1
+        retryTimer.current = window.setTimeout(connect, delay)
+      })
+  }, [connection])
+
+  const retryNow = useCallback(async () => {
+    failedAttempts.current = 0
+    if (connection.state !== HubConnectionState.Disconnected) {
+      try {
+        await connection.stop()
+      } catch {
+        return
+      }
+    }
+    connect()
+  }, [connection, connect])
 
   useEffect(() => {
     connection.onreconnecting(() => setStatus('reconnecting'))
     connection.onreconnected(() => setStatus('connected'))
-    connection.onclose(() => setStatus('disconnected'))
+    connection.onclose(() => {
+      setStatus('reconnecting')
+      connect()
+    })
 
     if (!started.current) {
       started.current = true
-      startConnection()
-        .then(() => setStatus('connected'))
-        .catch(() => setStatus('disconnected'))
+      connect()
     } else if (connection.state === HubConnectionState.Connected) {
       setStatus('connected')
     }
-  }, [connection])
+
+    return () => {
+      if (retryTimer.current !== null) window.clearTimeout(retryTimer.current)
+    }
+  }, [connection, connect])
 
   return (
-    <ConnectionContext.Provider value={{ connection, connected: status === 'connected', status }}>
+    <ConnectionContext.Provider value={{ connection, connected: status === 'connected', status, retryNow }}>
       {children}
     </ConnectionContext.Provider>
   )

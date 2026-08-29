@@ -46,7 +46,7 @@ interface ModalState {
 }
 
 export default function Room() {
-  const { connection, connected, status } = useConnection()
+  const { connection, connected, status, retryNow } = useConnection()
   const { snapshot, playerId, isWatching, clearRoom } = useRoom()
   const actions = useRoomActions(connection, connected)
   const { showToast } = useToast()
@@ -327,7 +327,7 @@ export default function Room() {
         />
 
         <div className="room-banners">
-          <ConnectionBanner status={status} />
+          <ConnectionBanner status={status} onRetry={retryNow} />
           <BreakRequestBanner
             count={breakCount}
             canClear={isLeader}
