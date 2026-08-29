@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react'
 
-export function useLocalStorage(key: string) {
+export function useSessionStorage(key: string) {
   const [value, setValue] = useState<string | null>(
-    () => localStorage.getItem(key)
+    () => sessionStorage.getItem(key)
   )
 
   const set = useCallback((newValue: string | null) => {
     if (newValue === null) {
-      localStorage.removeItem(key)
+      sessionStorage.removeItem(key)
     } else {
-      localStorage.setItem(key, newValue)
+      sessionStorage.setItem(key, newValue)
     }
     setValue(newValue)
   }, [key])
