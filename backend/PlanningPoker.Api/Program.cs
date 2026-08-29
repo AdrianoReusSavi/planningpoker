@@ -13,7 +13,7 @@ builder.Services.AddSingleton<IRoomService, RoomService>();
 builder.Services.AddSignalR(options =>
 {
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(150);
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
 

@@ -3,6 +3,8 @@ import type { IRetryPolicy, RetryContext } from '@microsoft/signalr'
 
 const RETRY_DELAYS = [0, 2000, 5000, 10000, 20000]
 const MAX_RETRY_DELAY = 30000
+const SERVER_TIMEOUT = 150000
+const KEEP_ALIVE_INTERVAL = 15000
 
 export const nextRetryDelay = (previousRetryCount: number) =>
   RETRY_DELAYS[previousRetryCount] ?? MAX_RETRY_DELAY
@@ -25,6 +27,8 @@ export function getConnection(): HubConnection {
     connection = new HubConnectionBuilder()
       .withUrl(HUB_URL)
       .withAutomaticReconnect(retryPolicy)
+      .withServerTimeout(SERVER_TIMEOUT)
+      .withKeepAliveInterval(KEEP_ALIVE_INTERVAL)
       .configureLogging(LogLevel.Warning)
       .build()
   }
