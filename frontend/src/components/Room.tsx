@@ -33,7 +33,6 @@ const PLAYER_PATTERN_COLOR_KEY = 'playerPatternColor'
 
 const seatErrorKey = (taking: boolean, error: RoomJoinError | null | undefined): TranslationKey => {
   if (error === 'ROOM_FULL') return taking ? 'seat.tableFull' : 'seat.benchFull'
-  if (error === 'LAST_SEATED_PLAYER') return 'seat.lastPlayer'
   if (error === 'ROUND_REVEALED') return 'seat.revealed'
   return 'seat.failed'
 }

@@ -32,32 +32,48 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
     // ── Room lifecycle ──
 
-    public CreateRoomResult? CreateRoom(string name, string roomName, EstimationOptions votingDeck, string connectionId)
+    public CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId)
     {
         if (!ValidateName(name) || !ValidateRoomName(roomName) || !Enum.IsDefined(votingDeck))
-            return null;
+            return CreateRoomOutcome.Failed(RoomJoinError.InvalidName);
 
         if (repository.HasConnection(connectionId))
-            return null;
+            return CreateRoomOutcome.Failed(RoomJoinError.AlreadyInRoom);
 
         var roomId = Guid.NewGuid().ToString();
-        var playerId = Guid.NewGuid().ToString();
+        var participantId = Guid.NewGuid().ToString();
         var room = new Room
         {
             RoomId = roomId,
             RoomName = roomName.Trim(),
-            OwnerId = playerId,
+            OwnerId = participantId,
             VotingDeck = votingDeck
         };
         room.StartVoting();
 
         if (!repository.TryAddRoom(room))
-            return null;
+            return CreateRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
-        room.AddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim() });
+        if (asWatcher)
+        {
+            var (accents, characters) = room.UsedLooks();
+            room.AddWatcher(new Watcher
+            {
+                WatcherId = participantId,
+                ConnectionId = connectionId,
+                Username = name.Trim(),
+                Accent = NextAccent(accents),
+                Character = NextCharacter(characters),
+            });
+        }
+        else
+        {
+            room.AddUser(new User { PlayerId = participantId, ConnectionId = connectionId, Username = name.Trim() });
+        }
+
         repository.MapConnection(connectionId, roomId);
 
-        return new CreateRoomResult(roomId, playerId, room.ToSnapshot());
+        return CreateRoomOutcome.Success(new CreateRoomResult(roomId, participantId, room.ToSnapshot()));
     }
 
     public EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId)
@@ -148,9 +164,6 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
         if (room.Phase == RoomPhase.Revealed)
             return WatchRoomOutcome.Failed(RoomJoinError.RoundRevealed);
-
-        if (room.PlayerCount == 1)
-            return WatchRoomOutcome.Failed(RoomJoinError.LastSeatedPlayer);
 
         if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
             return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);

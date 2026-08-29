@@ -12,14 +12,14 @@ public class RoomServiceThrowAndReactionTests
         var service = new RoomService(repo);
 
         var ownerConnId = "conn-owner";
-        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, ownerConnId);
+        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, false, ownerConnId).Created;
         Assert.NotNull(create);
 
         var targetConnId = "conn-target";
         var enter = service.EnterRoom(create!.RoomId, "Target", targetConnId).Joined;
         Assert.NotNull(enter);
 
-        return (service, create.RoomId, create.PlayerId, ownerConnId, enter!.PlayerId, targetConnId);
+        return (service, create.RoomId, create.ParticipantId, ownerConnId, enter!.PlayerId, targetConnId);
     }
 
     // ── ValidateThrow ──

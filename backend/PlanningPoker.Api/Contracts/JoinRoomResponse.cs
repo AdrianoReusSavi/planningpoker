@@ -15,7 +15,6 @@ public record JoinRoomResponse(string? Id, string? Error)
         RoomJoinError.RoomFull => "ROOM_FULL",
         RoomJoinError.AlreadyInRoom => "ALREADY_IN_ROOM",
         RoomJoinError.NotInRoom => "NOT_IN_ROOM",
-        RoomJoinError.LastSeatedPlayer => "LAST_SEATED_PLAYER",
         RoomJoinError.RoundRevealed => "ROUND_REVEALED",
         _ => "UNKNOWN",
     };

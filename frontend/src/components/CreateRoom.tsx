@@ -7,6 +7,11 @@ import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { LoadingIcon } from './Icons'
 import DeckSelect from './DeckSelect'
+import type { RoomJoinError } from '../types/room'
+import type { TranslationKey } from '../i18n/locales'
+
+const errorKey = (error: RoomJoinError | null | undefined): TranslationKey =>
+  error === 'ALREADY_IN_ROOM' ? 'create.alreadyInRoom' : 'create.error'
 
 export default function CreateRoom() {
   const { connection, connected } = useConnection()
@@ -17,24 +22,23 @@ export default function CreateRoom() {
   const [username, setUsername] = useUsername()
   const [roomName, setRoomName] = useState('')
   const [votingDeck, setVotingDeck] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<'play' | 'watch' | null>(null)
 
-  const handleCreate = async () => {
+  const create = async (mode: 'play' | 'watch') => {
     if (!username.trim() || !roomName.trim()) return
-    setLoading(true)
+    setLoading(mode)
     try {
-      const playerId = await createRoom(username.trim(), roomName.trim(), votingDeck)
-      if (playerId) {
-        setPlayerId(playerId)
-      } else {
-        showToast(t('create.error'), 'error')
-      }
+      const result = await createRoom(username.trim(), roomName.trim(), votingDeck, mode === 'watch')
+      if (result?.id) setPlayerId(result.id)
+      else showToast(t(errorKey(result?.error)), 'error')
     } catch {
       showToast(t('create.connectionError'), 'error')
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
   }
+
+  const handleCreate = () => create('play')
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleCreate()
@@ -59,12 +63,22 @@ export default function CreateRoom() {
         maxLength={30}
       />
       <DeckSelect value={votingDeck} onChange={setVotingDeck} />
-      <button
-        onClick={handleCreate}
-        disabled={!username.trim() || !roomName.trim() || !connected || loading}
-      >
-        {loading && <LoadingIcon />} {loading ? t('create.loading') : t('create.submit')}
-      </button>
+      <div className="button-row">
+        <button
+          onClick={handleCreate}
+          disabled={!username.trim() || !roomName.trim() || !connected || loading !== null}
+        >
+          {loading === 'play' && <LoadingIcon />} {loading === 'play' ? t('create.loading') : t('create.submit')}
+        </button>
+        <button
+          className="watch"
+          onClick={() => create('watch')}
+          disabled={!username.trim() || !roomName.trim() || !connected || loading !== null}
+          title={t('create.watchHint')}
+        >
+          {loading === 'watch' && <LoadingIcon />} {loading === 'watch' ? t('create.loading') : t('create.watch')}
+        </button>
+      </div>
     </div>
   )
 }

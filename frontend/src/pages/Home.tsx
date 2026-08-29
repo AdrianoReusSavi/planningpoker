@@ -20,6 +20,12 @@ export default function Home() {
     if (param) setRoomId(param)
   }, [])
 
+  useEffect(() => {
+    if (!snapshot) return
+    setRoomId(snapshot.id)
+    window.history.replaceState({}, '', `${window.location.pathname}?roomId=${encodeURIComponent(snapshot.id)}`)
+  }, [snapshot?.id])
+
   const goToCreate = () => {
     setRoomId('')
     window.history.replaceState({}, '', window.location.pathname)

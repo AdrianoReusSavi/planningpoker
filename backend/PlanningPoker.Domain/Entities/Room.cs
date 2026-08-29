@@ -66,6 +66,8 @@ public class Room
         {
             if (Phase != RoomPhase.Voting)
                 throw new InvalidOperationException($"Cannot reveal from phase {Phase}.");
+            if (Users.Count == 0)
+                throw new InvalidOperationException("Cannot reveal with nobody at the table.");
 
             var votes = Users
                 .Where(u => u.Vote is not null)
@@ -173,8 +175,6 @@ public class Room
         {
             var user = Users.FirstOrDefault(u => u.PlayerId == participantId)
                 ?? throw new InvalidOperationException("Player not found in room.");
-            if (Users.Count == 1)
-                throw new InvalidOperationException("The last seated player cannot leave the table.");
             if (Watchers.Count >= MaxWatchersPerRoom)
                 throw new InvalidOperationException("Room has too many watchers.");
 
@@ -361,7 +361,7 @@ public class Room
         get
         {
             _lock.EnterReadLock();
-            try { return Users.Count == 0; }
+            try { return Users.Count == 0 && Watchers.Count == 0; }
             finally { _lock.ExitReadLock(); }
         }
     }
