@@ -35,7 +35,6 @@ export type RoomJoinError =
   | 'ROOM_FULL'
   | 'ALREADY_IN_ROOM'
   | 'NOT_IN_ROOM'
-  | 'LAST_SEATED_PLAYER'
   | 'ROUND_REVEALED'
   | 'UNKNOWN'
 

@@ -14,10 +14,10 @@ public class RoomServiceSeatTests
         var service = new RoomService(repo);
 
         var ownerConn = "conn-owner";
-        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, ownerConn);
+        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, false, ownerConn).Created;
         Assert.NotNull(create);
 
-        return (service, create!.RoomId, create.PlayerId, ownerConn);
+        return (service, create!.RoomId, create.ParticipantId, ownerConn);
     }
 
     private static string Watch(RoomService service, string roomId, string name, string connectionId)
@@ -127,12 +127,17 @@ public class RoomServiceSeatTests
     }
 
     [Fact]
-    public void LeaveSeat_LastSeatedPlayer_IsRejected()
+    public void LeaveSeat_LastSeatedPlayer_LeavesTheTableEmpty()
     {
-        var (service, roomId, _, ownerConn) = Setup();
+        var (service, roomId, ownerId, ownerConn) = Setup();
         Watch(service, roomId, "Observer", "conn-watch");
 
-        Assert.Equal(RoomJoinError.LastSeatedPlayer, service.LeaveSeat(roomId, ownerConn).Error);
+        var watching = service.LeaveSeat(roomId, ownerConn).Joined;
+
+        Assert.NotNull(watching);
+        Assert.Empty(watching!.Snapshot.Players);
+        Assert.Equal(2, watching.Snapshot.Watchers.Count);
+        Assert.Equal(ownerId, watching.Snapshot.OwnerId);
     }
 
     [Fact]

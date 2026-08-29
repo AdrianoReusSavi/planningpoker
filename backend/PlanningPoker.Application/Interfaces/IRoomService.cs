@@ -6,7 +6,7 @@ namespace PlanningPoker.Application.Interfaces;
 
 public interface IRoomService
 {
-    CreateRoomResult? CreateRoom(string name, string roomName, EstimationOptions votingDeck, string connectionId);
+    CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId);
     EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId);
     WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId);
     EnterRoomOutcome TakeSeat(string roomId, string connectionId);

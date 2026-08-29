@@ -8,6 +8,5 @@ public enum RoomJoinError
     RoomFull,
     AlreadyInRoom,
     NotInRoom,
-    LastSeatedPlayer,
     RoundRevealed
 }

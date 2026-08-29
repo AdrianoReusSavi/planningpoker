@@ -19,14 +19,14 @@ public class PlanningHub(
     public async Task Ping()
         => await Clients.Caller.SendAsync("Pong");
 
-    public async Task<string?> CreateRoom(string name, string roomName, EstimationOptions votingDeck)
+    public async Task<JoinRoomResponse> CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher)
     {
-        var result = roomService.CreateRoom(name, roomName, votingDeck, Context.ConnectionId);
-        if (result is null) return null;
+        var outcome = roomService.CreateRoom(name, roomName, votingDeck, asWatcher, Context.ConnectionId);
+        if (outcome.Created is null) return JoinRoomResponse.Rejected(outcome.Error);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
-        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
-        return result.PlayerId;
+        await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Created.RoomId);
+        await Clients.Group(outcome.Created.RoomId).SendAsync("STATE_SYNC", outcome.Created.Snapshot);
+        return JoinRoomResponse.Accepted(outcome.Created.ParticipantId);
     }
 
     public async Task<JoinRoomResponse> EnterRoom(string roomId, string name)

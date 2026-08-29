@@ -9,8 +9,8 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
   }, [connection, connected])
 
   const createRoom = useCallback(
-    (name: string, roomName: string, votingDeck: number) =>
-      invoke<string>('CreateRoom', name, roomName, votingDeck),
+    (name: string, roomName: string, votingDeck: number, asWatcher: boolean) =>
+      invoke<JoinRoomResponse>('CreateRoom', name, roomName, votingDeck, asWatcher),
     [invoke],
   )
 

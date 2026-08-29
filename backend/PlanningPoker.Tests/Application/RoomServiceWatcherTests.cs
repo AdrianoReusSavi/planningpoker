@@ -14,10 +14,10 @@ public class RoomServiceWatcherTests
         var service = new RoomService(repo);
 
         var ownerConn = "conn-owner";
-        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, ownerConn);
+        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, false, ownerConn).Created;
         Assert.NotNull(create);
 
-        return (service, create!.RoomId, create.PlayerId, ownerConn);
+        return (service, create!.RoomId, create.ParticipantId, ownerConn);
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public class RoomServiceWatcherTests
     }
 
     [Fact]
-    public void Watchers_DoNotKeepAnEmptyRoomAlive()
+    public void Watchers_KeepTheRoomAliveWithNobodySeated()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
         service.WatchRoom(roomId, "Observer", "conn-watch");
@@ -340,8 +340,11 @@ public class RoomServiceWatcherTests
         service.HandleDisconnect(ownerConn);
         var removal = service.PermanentlyRemovePlayer(roomId, ownerId);
 
-        Assert.True(removal.RoomRemoved);
-        Assert.Null(service.GetRoomSettings("conn-watch"));
+        Assert.False(removal.RoomRemoved);
+        var settings = service.GetRoomSettings("conn-watch");
+        Assert.NotNull(settings);
+        Assert.Empty(settings!.Players);
+        Assert.Single(settings.Watchers);
     }
 
     [Theory]
@@ -473,14 +476,18 @@ public class RoomServiceWatcherTests
     }
 
     [Fact]
-    public void WatcherLeader_KickingTheLastPlayer_FreesTheRoom()
+    public void WatcherLeader_KickingTheLastPlayer_KeepsTheRoomForTheBench()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
         var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
 
         Assert.NotNull(service.KickPlayer(roomId, ownerId, "conn-watch"));
-        Assert.Null(service.GetRoomSettings("conn-watch"));
+
+        var settings = service.GetRoomSettings("conn-watch");
+        Assert.NotNull(settings);
+        Assert.Empty(settings!.Players);
+        Assert.Single(settings.Watchers);
     }
 
     [Fact]

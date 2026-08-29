@@ -12,10 +12,10 @@ public class RoomServiceRevealTests
         var service = new RoomService(repo);
 
         var ownerConn = "conn-owner";
-        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, ownerConn);
+        var create = service.CreateRoom("Owner", "Test Room", EstimationOptions.Fibonacci, false, ownerConn).Created;
         Assert.NotNull(create);
 
-        return (service, create!.RoomId, create.PlayerId, ownerConn);
+        return (service, create!.RoomId, create.ParticipantId, ownerConn);
     }
 
     [Fact]

@@ -9,6 +9,9 @@ const locales = {
     'create.submit': 'Criar Sala',
     'create.loading': 'Criando...',
     'create.error': 'Falha ao criar sala. Tente novamente.',
+    'create.alreadyInRoom': 'Você já está em uma sala nesta aba.',
+    'create.watch': 'Criar e assistir',
+    'create.watchHint': 'Cria a sala e te deixa no banco. A mesa começa vazia.',
     'create.connectionError': 'Erro de conexão. Verifique sua internet.',
 
     // EnterRoom
@@ -41,7 +44,6 @@ const locales = {
     'seat.leave': 'Só assistir',
     'seat.tableFull': 'A mesa já está com todos os lugares ocupados.',
     'seat.benchFull': 'O banco de espectadores está cheio.',
-    'seat.lastPlayer': 'Você é o último jogador na mesa. A sala precisa de alguém sentado.',
     'seat.revealed': 'A rodada está aberta. Troque de lugar depois do reset.',
     'seat.failed': 'Não foi possível trocar de lugar.',
 
@@ -174,6 +176,9 @@ const locales = {
     'create.submit': 'Create Room',
     'create.loading': 'Creating...',
     'create.error': 'Failed to create room. Try again.',
+    'create.alreadyInRoom': 'You are already in a room in this tab.',
+    'create.watch': 'Create and watch',
+    'create.watchHint': 'Creates the room and puts you on the bench. The table starts empty.',
     'create.connectionError': 'Connection error. Check your internet.',
 
     'enter.name': 'Your name',
@@ -205,7 +210,6 @@ const locales = {
     'seat.leave': 'Just watch',
     'seat.tableFull': 'The table already has every seat taken.',
     'seat.benchFull': 'The watcher bench is full.',
-    'seat.lastPlayer': 'You are the last player at the table. The room needs someone seated.',
     'seat.revealed': 'The round is open. Switch places after the reset.',
     'seat.failed': 'Could not switch places.',
 
@@ -324,6 +328,9 @@ const locales = {
     'create.submit': 'Crear Sala',
     'create.loading': 'Creando...',
     'create.error': 'Error al crear la sala. Inténtalo de nuevo.',
+    'create.alreadyInRoom': 'Ya estás en una sala en esta pestaña.',
+    'create.watch': 'Crear y ver',
+    'create.watchHint': 'Crea la sala y te deja en el banco. La mesa empieza vacía.',
     'create.connectionError': 'Error de conexión. Verifica tu internet.',
 
     'enter.name': 'Tu nombre',
@@ -355,7 +362,6 @@ const locales = {
     'seat.leave': 'Solo ver',
     'seat.tableFull': 'La mesa ya tiene todos los lugares ocupados.',
     'seat.benchFull': 'El banco de espectadores está lleno.',
-    'seat.lastPlayer': 'Eres el último jugador en la mesa. La sala necesita a alguien sentado.',
     'seat.revealed': 'La ronda está abierta. Cambia de lugar después del reset.',
     'seat.failed': 'No se pudo cambiar de lugar.',
 
