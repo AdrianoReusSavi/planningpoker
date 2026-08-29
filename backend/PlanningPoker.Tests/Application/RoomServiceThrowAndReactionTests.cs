@@ -16,7 +16,7 @@ public class RoomServiceThrowAndReactionTests
         Assert.NotNull(create);
 
         var targetConnId = "conn-target";
-        var enter = service.EnterRoom(create!.RoomId, "Target", targetConnId);
+        var enter = service.EnterRoom(create!.RoomId, "Target", targetConnId).Joined;
         Assert.NotNull(enter);
 
         return (service, create.RoomId, create.PlayerId, ownerConnId, enter!.PlayerId, targetConnId);

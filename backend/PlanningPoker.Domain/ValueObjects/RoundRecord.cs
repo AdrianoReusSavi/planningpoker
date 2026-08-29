@@ -2,6 +2,6 @@ namespace PlanningPoker.Domain.ValueObjects;
 
 public record RoundRecord(
     int Round,
-    IReadOnlyDictionary<string, string> Votes,
+    IReadOnlyList<RoundVote> Votes,
     DateTime CompletedAt
 );

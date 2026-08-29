@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { HubConnection } from '@microsoft/signalr'
+import type { JoinRoomResponse } from '../types/room'
 
 export function useRoomActions(connection: HubConnection | null, connected: boolean) {
   const invoke = useCallback(async <T>(method: string, ...args: unknown[]): Promise<T | null> => {
@@ -15,13 +16,13 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
 
   const enterRoom = useCallback(
     (roomId: string, name: string) =>
-      invoke<string>('EnterRoom', roomId, name),
+      invoke<JoinRoomResponse>('EnterRoom', roomId, name),
     [invoke],
   )
 
   const watchRoom = useCallback(
     (roomId: string, name: string) =>
-      invoke<string>('WatchRoom', roomId, name),
+      invoke<JoinRoomResponse>('WatchRoom', roomId, name),
     [invoke],
   )
 

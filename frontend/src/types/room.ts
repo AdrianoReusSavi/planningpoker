@@ -16,10 +16,28 @@ export interface WatcherSnapshot {
   character: number
 }
 
+export interface RoundVote {
+  playerId: string
+  name: string
+  vote: string
+}
+
 export interface RoundRecord {
   round: number
-  votes: Record<string, string>
+  votes: RoundVote[]
   completedAt: string
+}
+
+export type RoomJoinError =
+  | 'INVALID_NAME'
+  | 'ROOM_NOT_FOUND'
+  | 'ROOM_FULL'
+  | 'ALREADY_IN_ROOM'
+  | 'UNKNOWN'
+
+export interface JoinRoomResponse {
+  id: string | null
+  error: RoomJoinError | null
 }
 
 export interface RoomSnapshot {

@@ -60,36 +60,45 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return new CreateRoomResult(roomId, playerId, room.ToSnapshot());
     }
 
-    public EnterRoomResult? EnterRoom(string roomId, string name, string connectionId)
+    public EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId)
     {
-        if (!ValidateName(name) || string.IsNullOrWhiteSpace(roomId))
-            return null;
+        if (!ValidateName(name))
+            return EnterRoomOutcome.Failed(RoomJoinError.InvalidName);
+
+        if (string.IsNullOrWhiteSpace(roomId))
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
         var room = repository.GetRoom(roomId);
-        if (room is null || room.PlayerCount >= Room.MaxPlayersPerRoom)
-            return null;
+        if (room is null)
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomNotFound);
+
+        if (room.PlayerCount >= Room.MaxPlayersPerRoom)
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
 
         var playerId = Guid.NewGuid().ToString();
         room.AddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim() });
         repository.MapConnection(connectionId, roomId);
 
-        return new EnterRoomResult(roomId, playerId, room.ToSnapshot());
+        return EnterRoomOutcome.Success(new EnterRoomResult(roomId, playerId, room.ToSnapshot()));
     }
 
-    public WatchRoomResult? WatchRoom(string roomId, string name, string connectionId)
+    public WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId)
     {
-        if (!ValidateName(name) || string.IsNullOrWhiteSpace(roomId))
-            return null;
+        if (!ValidateName(name))
+            return WatchRoomOutcome.Failed(RoomJoinError.InvalidName);
+
+        if (string.IsNullOrWhiteSpace(roomId))
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
         var room = repository.GetRoom(roomId);
         if (room is null)
-            return null;
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
         if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
-            return null;
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);
 
         if (repository.HasConnection(connectionId))
-            return null;
+            return WatchRoomOutcome.Failed(RoomJoinError.AlreadyInRoom);
 
         var watcherId = Guid.NewGuid().ToString();
         var (accents, characters) = room.UsedLooks();
@@ -103,7 +112,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         });
         repository.MapConnection(connectionId, roomId);
 
-        return new WatchRoomResult(roomId, watcherId, room.ToSnapshot());
+        return WatchRoomOutcome.Success(new WatchRoomResult(roomId, watcherId, room.ToSnapshot()));
     }
 
     public RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId)

@@ -1,3 +1,4 @@
+using PlanningPoker.Application.Results;
 using PlanningPoker.Application.Services;
 using PlanningPoker.Domain.Entities;
 using PlanningPoker.Domain.Enums;
@@ -24,11 +25,11 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, _) = Setup();
         for (var i = 1; i < Room.MaxPlayersPerRoom; i++)
-            Assert.NotNull(service.EnterRoom(roomId, $"P{i}", $"conn-{i}"));
+            Assert.NotNull(service.EnterRoom(roomId, $"P{i}", $"conn-{i}").Joined);
 
-        Assert.Null(service.EnterRoom(roomId, "Late", "conn-late"));
+        Assert.Equal(RoomJoinError.RoomFull, service.EnterRoom(roomId, "Late", "conn-late").Error);
 
-        var watch = service.WatchRoom(roomId, "Scrum Master", "conn-sm");
+        var watch = service.WatchRoom(roomId, "Scrum Master", "conn-sm").Joined;
 
         Assert.NotNull(watch);
         Assert.Equal(Room.MaxPlayersPerRoom, watch!.Snapshot.Players.Count);
@@ -56,7 +57,7 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, _) = Setup();
 
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         Assert.NotNull(watch);
         Assert.DoesNotContain(watch!.Snapshot.Players, p => p.Id == watch.WatcherId);
@@ -68,7 +69,7 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, _) = Setup();
 
-        var watch = service.WatchRoom(roomId, "  Scrum Master  ", "conn-sm");
+        var watch = service.WatchRoom(roomId, "  Scrum Master  ", "conn-sm").Joined;
 
         Assert.NotNull(watch);
         var watcher = Assert.Single(watch!.Snapshot.Watchers);
@@ -85,7 +86,7 @@ public class RoomServiceWatcherTests
 
         service.WatchRoom(roomId, "One", "conn-1");
         service.WatchRoom(roomId, "Two", "conn-2");
-        var third = service.WatchRoom(roomId, "Three", "conn-3");
+        var third = service.WatchRoom(roomId, "Three", "conn-3").Joined;
 
         var accents = third!.Snapshot.Watchers.Select(w => w.Accent).ToList();
         Assert.Equal(3, accents.Count);
@@ -107,7 +108,7 @@ public class RoomServiceWatcherTests
     public void ValidateReaction_FromWatcher_IsAccepted()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var result = service.ValidateReaction(roomId, "coffee", "conn-watch");
 
@@ -119,7 +120,7 @@ public class RoomServiceWatcherTests
     public void ValidateThrow_FromWatcherAtPlayer_IsAccepted()
     {
         var (service, roomId, ownerId, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var result = service.ValidateThrow(roomId, ownerId, "paper", "conn-watch");
 
@@ -132,7 +133,7 @@ public class RoomServiceWatcherTests
     public void ValidateThrow_AtWatcher_IsAccepted()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var result = service.ValidateThrow(roomId, watch!.WatcherId, "paper", ownerConn);
 
@@ -145,8 +146,8 @@ public class RoomServiceWatcherTests
     public void ValidateThrow_BetweenWatchers_IsAccepted()
     {
         var (service, roomId, _, _) = Setup();
-        var a = service.WatchRoom(roomId, "A", "conn-a");
-        var b = service.WatchRoom(roomId, "B", "conn-b");
+        var a = service.WatchRoom(roomId, "A", "conn-a").Joined;
+        var b = service.WatchRoom(roomId, "B", "conn-b").Joined;
 
         var result = service.ValidateThrow(roomId, b!.WatcherId, "paper", "conn-a");
 
@@ -158,7 +159,7 @@ public class RoomServiceWatcherTests
     public void ValidateThrow_AtSomeoneWhoLeft_IsRejected()
     {
         var (service, roomId, _, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         service.LeaveRoom(roomId, "conn-watch");
 
         Assert.Null(service.ValidateThrow(roomId, watch!.WatcherId, "paper", ownerConn));
@@ -168,7 +169,7 @@ public class RoomServiceWatcherTests
     public void ValidateThrow_WatcherAtThemselves_IsRejected()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         Assert.Null(service.ValidateThrow(roomId, watch!.WatcherId, "paper", "conn-watch"));
     }
@@ -177,7 +178,7 @@ public class RoomServiceWatcherTests
     public void UpdateWatcherAppearance_ChangesColourAndCharacter()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         var assigned = watch!.Snapshot.Watchers[0];
 
         var snapshot = service.UpdateWatcherAppearance(roomId, "#ff6b6b", 4, "conn-watch");
@@ -192,7 +193,7 @@ public class RoomServiceWatcherTests
     public void UpdateWatcherAppearance_KeepsTheSameWatcher()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var snapshot = service.UpdateWatcherAppearance(roomId, "#ff6b6b", 3, "conn-watch");
 
@@ -253,8 +254,8 @@ public class RoomServiceWatcherTests
     public void UpdateWatcherAppearance_OnlyChangesTheCaller()
     {
         var (service, roomId, _, _) = Setup();
-        var a = service.WatchRoom(roomId, "A", "conn-a");
-        var b = service.WatchRoom(roomId, "B", "conn-b");
+        var a = service.WatchRoom(roomId, "A", "conn-a").Joined;
+        var b = service.WatchRoom(roomId, "B", "conn-b").Joined;
         var bAccent = b!.Snapshot.Watchers.First(w => w.Id == b.WatcherId).Accent;
 
         var snapshot = service.UpdateWatcherAppearance(roomId, "#ff6b6b", 2, "conn-a");
@@ -280,7 +281,7 @@ public class RoomServiceWatcherTests
     public void HandleDisconnect_WatcherStaysListedButDisconnected()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var result = service.HandleDisconnect("conn-watch");
 
@@ -294,7 +295,7 @@ public class RoomServiceWatcherTests
     public void Reconnect_BringsBackTheSameWatcher()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         service.HandleDisconnect("conn-watch");
 
         var result = service.Reconnect(roomId, watch!.WatcherId, "conn-watch-2");
@@ -309,7 +310,7 @@ public class RoomServiceWatcherTests
     public void PermanentlyRemovePlayer_AlsoRemovesADroppedWatcher()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         service.HandleDisconnect("conn-watch");
 
         var removal = service.PermanentlyRemovePlayer(roomId, watch!.WatcherId);
@@ -322,7 +323,7 @@ public class RoomServiceWatcherTests
     public void PermanentlyRemovePlayer_KeepsAConnectedWatcher()
     {
         var (service, roomId, _, _) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var removal = service.PermanentlyRemovePlayer(roomId, watch!.WatcherId);
 
@@ -351,7 +352,7 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, _) = Setup();
 
-        Assert.Null(service.WatchRoom(roomId, name!, "conn-watch"));
+        Assert.Equal(RoomJoinError.InvalidName, service.WatchRoom(roomId, name!, "conn-watch").Error);
     }
 
     [Fact]
@@ -359,7 +360,7 @@ public class RoomServiceWatcherTests
     {
         var (service, _, _, _) = Setup();
 
-        Assert.Null(service.WatchRoom("nonexistent-room", "Observer", "conn-watch"));
+        Assert.Equal(RoomJoinError.RoomNotFound, service.WatchRoom("nonexistent-room", "Observer", "conn-watch").Error);
     }
 
     [Fact]
@@ -367,7 +368,26 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, ownerConn) = Setup();
 
-        Assert.Null(service.WatchRoom(roomId, "Owner Again", ownerConn));
+        Assert.Equal(RoomJoinError.AlreadyInRoom, service.WatchRoom(roomId, "Owner Again", ownerConn).Error);
+    }
+
+    [Fact]
+    public void EnterRoom_UnknownRoom_IsRejected()
+    {
+        var (service, _, _, _) = Setup();
+
+        Assert.Equal(RoomJoinError.RoomNotFound, service.EnterRoom("nonexistent-room", "Late", "conn-late").Error);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void EnterRoom_BlankName_IsRejected(string? name)
+    {
+        var (service, roomId, _, _) = Setup();
+
+        Assert.Equal(RoomJoinError.InvalidName, service.EnterRoom(roomId, name!, "conn-late").Error);
     }
 
     [Fact]
@@ -375,16 +395,16 @@ public class RoomServiceWatcherTests
     {
         var (service, roomId, _, _) = Setup();
         for (var i = 0; i < Room.MaxWatchersPerRoom; i++)
-            Assert.NotNull(service.WatchRoom(roomId, $"W{i}", $"conn-w{i}"));
+            Assert.NotNull(service.WatchRoom(roomId, $"W{i}", $"conn-w{i}").Joined);
 
-        Assert.Null(service.WatchRoom(roomId, "One Too Many", "conn-extra"));
+        Assert.Equal(RoomJoinError.RoomFull, service.WatchRoom(roomId, "One Too Many", "conn-extra").Error);
     }
 
     [Fact]
     public void TransferOwnership_ToAConnectedWatcher_MovesTheCrown()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
 
         var snapshot = service.TransferOwnership(roomId, watch!.WatcherId, ownerConn);
 
@@ -397,7 +417,7 @@ public class RoomServiceWatcherTests
     public void TransferOwnership_ToADisconnectedWatcher_IsRejected()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         service.HandleDisconnect("conn-watch");
 
         Assert.Null(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
@@ -408,7 +428,7 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_RevealsAndResetsTheRound()
     {
         var (service, roomId, _, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
         Assert.NotNull(service.SubmitVote(roomId, "5", ownerConn));
 
@@ -431,7 +451,7 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_ClearsBreakRequests()
     {
         var (service, roomId, _, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
         Assert.NotNull(service.ToggleBreakRequest(roomId, ownerConn));
 
@@ -442,8 +462,8 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_KicksAPlayer()
     {
         var (service, roomId, _, ownerConn) = Setup();
-        var player = service.EnterRoom(roomId, "Player", "conn-player");
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var player = service.EnterRoom(roomId, "Player", "conn-player").Joined;
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
 
         var kick = service.KickPlayer(roomId, player!.PlayerId, "conn-watch");
@@ -456,7 +476,7 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_KickingTheLastPlayer_FreesTheRoom()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
 
         Assert.NotNull(service.KickPlayer(roomId, ownerId, "conn-watch"));
@@ -467,7 +487,7 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_HandsTheCrownBackToAPlayer()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
 
         Assert.Equal(ownerId, service.TransferOwnership(roomId, ownerId, "conn-watch")?.OwnerId);
@@ -477,7 +497,7 @@ public class RoomServiceWatcherTests
     public void WatcherLeader_LeavingHandsTheCrownToAPlayer()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
-        var watch = service.WatchRoom(roomId, "Observer", "conn-watch");
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
         Assert.NotNull(service.TransferOwnership(roomId, watch!.WatcherId, ownerConn));
 
         Assert.Equal(ownerId, service.LeaveRoom(roomId, "conn-watch")?.Snapshot?.OwnerId);
