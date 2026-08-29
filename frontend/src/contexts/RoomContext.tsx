@@ -99,6 +99,17 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     }
   }, [connection, connected, rejoinAttempt, clearRoom, reconnect, setPlayerId])
 
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !connected) return
+      if (!sessionStorage.getItem('roomId')) return
+      connection.invoke('GetRoomSettings').catch(() => { /**/ })
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [connection, connected])
+
   const isWatching = snapshot !== null && playerId !== null
     && snapshot.watchers.some(w => w.id === playerId)
 

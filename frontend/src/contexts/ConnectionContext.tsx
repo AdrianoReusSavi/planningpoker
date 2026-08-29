@@ -4,6 +4,8 @@ import { getConnection, nextRetryDelay, startConnection } from '../services/sign
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
+const PING_TIMEOUT_MS = 3000
+
 interface ConnectionContextValue {
   connection: HubConnection
   connected: boolean
@@ -52,6 +54,32 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     }
     connect()
   }, [connection, connect])
+
+  useEffect(() => {
+    const swallowPong = () => { /**/ }
+    connection.on('Pong', swallowPong)
+    return () => connection.off('Pong', swallowPong)
+  }, [connection])
+
+  useEffect(() => {
+    const onVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return
+
+      if (connection.state !== HubConnectionState.Connected) {
+        retryNow()
+        return
+      }
+
+      const alive = await Promise.race([
+        connection.invoke('Ping').then(() => true).catch(() => false),
+        new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), PING_TIMEOUT_MS)),
+      ])
+      if (!alive) retryNow()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [connection, retryNow])
 
   useEffect(() => {
     connection.onreconnecting(() => setStatus('reconnecting'))
