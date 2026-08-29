@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
+using PlanningPoker.Api.Contracts;
 using PlanningPoker.Application.Interfaces;
 using PlanningPoker.Domain.Enums;
 
@@ -28,24 +29,24 @@ public class PlanningHub(
         return result.PlayerId;
     }
 
-    public async Task<string?> EnterRoom(string roomId, string name)
+    public async Task<JoinRoomResponse> EnterRoom(string roomId, string name)
     {
-        var result = roomService.EnterRoom(roomId, name, Context.ConnectionId);
-        if (result is null) return null;
+        var outcome = roomService.EnterRoom(roomId, name, Context.ConnectionId);
+        if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
-        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
-        return result.PlayerId;
+        await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Joined.RoomId);
+        await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        return JoinRoomResponse.Accepted(outcome.Joined.PlayerId);
     }
 
-    public async Task<string?> WatchRoom(string roomId, string name)
+    public async Task<JoinRoomResponse> WatchRoom(string roomId, string name)
     {
-        var result = roomService.WatchRoom(roomId, name, Context.ConnectionId);
-        if (result is null) return null;
+        var outcome = roomService.WatchRoom(roomId, name, Context.ConnectionId);
+        if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, result.RoomId);
-        await Clients.Group(result.RoomId).SendAsync("STATE_SYNC", result.Snapshot);
-        return result.WatcherId;
+        await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Joined.RoomId);
+        await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        return JoinRoomResponse.Accepted(outcome.Joined.WatcherId);
     }
 
     public async Task UpdateWatcherAppearance(string roomId, string accent, int character)

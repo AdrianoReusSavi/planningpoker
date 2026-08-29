@@ -69,7 +69,8 @@ public class Room
 
             var votes = Users
                 .Where(u => u.Vote is not null)
-                .ToDictionary(u => u.Username, u => u.Vote!);
+                .Select(u => new RoundVote(u.PlayerId, u.Username, u.Vote!))
+                .ToList();
 
             _history.Add(new RoundRecord(_roundNumber, votes, DateTime.UtcNow));
             _roundNumber++;

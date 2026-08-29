@@ -24,8 +24,7 @@ export default function RoundHistory({ open, onClose, history }: RoundHistoryPro
             <p className="drawer-empty">{t('history.empty')}</p>
           ) : (
             [...history].reverse().map(round => {
-              const entries = Object.entries(round.votes)
-              const numericVotes = entries.map(([, v]) => parseFloat(v)).filter(n => !isNaN(n))
+              const numericVotes = round.votes.map(v => parseFloat(v.vote)).filter(n => !isNaN(n))
               const mean = numericVotes.length > 0
                 ? (numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length).toFixed(1)
                 : null
@@ -44,10 +43,10 @@ export default function RoundHistory({ open, onClose, history }: RoundHistoryPro
                       </tr>
                     </thead>
                     <tbody>
-                      {entries.map(([name, vote]) => (
-                        <tr key={name}>
-                          <td>{name}</td>
-                          <td className="round-vote-cell">{vote}</td>
+                      {round.votes.map(v => (
+                        <tr key={v.playerId}>
+                          <td>{v.name}</td>
+                          <td className="round-vote-cell">{v.vote}</td>
                         </tr>
                       ))}
                     </tbody>

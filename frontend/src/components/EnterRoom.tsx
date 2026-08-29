@@ -6,6 +6,18 @@ import { useUsername } from '../hooks/useUsername'
 import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { LoadingIcon } from './Icons'
+import type { RoomJoinError } from '../types/room'
+import type { TranslationKey } from '../i18n/locales'
+
+const errorKey = (mode: 'play' | 'watch', error: RoomJoinError | null | undefined): TranslationKey => {
+  switch (error) {
+    case 'INVALID_NAME': return 'enter.invalidName'
+    case 'ROOM_NOT_FOUND': return 'enter.notFound'
+    case 'ROOM_FULL': return mode === 'play' ? 'enter.playersFull' : 'enter.watchersFull'
+    case 'ALREADY_IN_ROOM': return 'enter.alreadyInRoom'
+    default: return mode === 'play' ? 'enter.joinFailed' : 'enter.watchFailed'
+  }
+}
 
 interface EnterRoomProps {
   roomId: string
@@ -25,14 +37,11 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
     if (!username.trim() || !roomId) return
     setLoading(mode)
     try {
-      const id = mode === 'play'
+      const result = mode === 'play'
         ? await enterRoom(roomId, username.trim())
         : await watchRoom(roomId, username.trim())
-      if (id) {
-        setPlayerId(id)
-      } else {
-        showToast(mode === 'play' ? t('enter.notFound') : t('enter.watchFailed'), 'error')
-      }
+      if (result?.id) setPlayerId(result.id)
+      else showToast(t(errorKey(mode, result?.error)), 'error')
     } catch {
       showToast(t('enter.connectionError'), 'error')
     } finally {

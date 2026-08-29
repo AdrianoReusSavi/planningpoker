@@ -160,6 +160,40 @@ public class RoomTests
 
     #endregion
 
+    #region Round History
+
+    [Fact]
+    public void Reveal_TwoPlayersWithTheSameName_RecordsBothVotes()
+    {
+        var room = CreateRoom(1);
+        room.AddUser(new User { PlayerId = "twin", ConnectionId = "conn-twin", Username = "Player 0" });
+        room.SubmitVote("owner", "5");
+        room.SubmitVote("twin", "8");
+
+        room.Reveal();
+
+        var round = Assert.Single(room.ToSnapshot().History);
+        Assert.Equal(new[] { "owner", "twin" }, round.Votes.Select(v => v.PlayerId));
+        Assert.Equal(new[] { "5", "8" }, round.Votes.Select(v => v.Vote));
+        Assert.All(round.Votes, v => Assert.Equal("Player 0", v.Name));
+    }
+
+    [Fact]
+    public void Reveal_KeepsTheVoterNameAfterTheyLeave()
+    {
+        var room = CreateRoom();
+        room.SubmitVote("player-1", "13");
+        room.Reveal();
+        room.RemoveUser("player-1");
+
+        var round = Assert.Single(room.ToSnapshot().History);
+        var vote = Assert.Single(round.Votes);
+        Assert.Equal("Player 1", vote.Name);
+        Assert.Equal("13", vote.Vote);
+    }
+
+    #endregion
+
     #region Snapshot Privacy
 
     [Fact]
