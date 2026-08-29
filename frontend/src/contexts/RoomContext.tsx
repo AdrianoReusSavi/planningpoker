@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useConnection } from './ConnectionContext'
 import { useRoomActions } from '../hooks/useRoomActions'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSessionStorage } from '../hooks/useSessionStorage'
 import type { RoomSnapshot } from '../types/room'
 
 interface RoomContextValue {
@@ -24,8 +24,8 @@ export function RoomProvider({ children }: { children: ReactNode }) {
   const { connection, connected } = useConnection()
   const { reconnect } = useRoomActions(connection, connected)
   const [snapshot, setSnapshot] = useState<RoomSnapshot | null>(null)
-  const [playerId, setPlayerId] = useLocalStorage('playerId')
-  const [, setRoomId] = useLocalStorage('roomId')
+  const [playerId, setPlayerId] = useSessionStorage('playerId')
+  const [, setRoomId] = useSessionStorage('roomId')
   const reconnectAttempted = useRef(false)
 
   const clearRoom = useCallback(() => {
@@ -33,6 +33,11 @@ export function RoomProvider({ children }: { children: ReactNode }) {
     setPlayerId(null)
     setRoomId(null)
   }, [setPlayerId, setRoomId])
+
+  useEffect(() => {
+    localStorage.removeItem('playerId')
+    localStorage.removeItem('roomId')
+  }, [])
 
   useEffect(() => {
     if (!connection) return
@@ -60,23 +65,29 @@ export function RoomProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const savedRoomId = localStorage.getItem('roomId')
-    const savedPlayerId = localStorage.getItem('playerId')
+    const savedRoomId = sessionStorage.getItem('roomId')
+    const savedPlayerId = sessionStorage.getItem('playerId')
 
-    if (savedRoomId && savedPlayerId && !reconnectAttempted.current) {
-      reconnectAttempted.current = true
-      reconnect(savedRoomId, savedPlayerId)
-        .then((success) => {
-          if (success) {
-            setPlayerId(savedPlayerId)
-          } else {
-            clearRoom()
-          }
-        })
-        .catch(() => {
-          clearRoom()
-        })
+    if (!savedRoomId || !savedPlayerId || reconnectAttempted.current) return
+    reconnectAttempted.current = true
+
+    const urlRoomId = new URLSearchParams(window.location.search).get('roomId')
+    if (urlRoomId && urlRoomId !== savedRoomId) {
+      clearRoom()
+      return
     }
+
+    reconnect(savedRoomId, savedPlayerId)
+      .then((success) => {
+        if (success) {
+          setPlayerId(savedPlayerId)
+        } else {
+          clearRoom()
+        }
+      })
+      .catch(() => {
+        clearRoom()
+      })
   }, [connection, connected, clearRoom, reconnect, setPlayerId])
 
   const isWatching = snapshot !== null && playerId !== null
