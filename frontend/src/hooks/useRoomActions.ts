@@ -26,6 +26,18 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const takeSeat = useCallback(
+    (roomId: string) =>
+      invoke<JoinRoomResponse>('TakeSeat', roomId),
+    [invoke],
+  )
+
+  const leaveSeat = useCallback(
+    (roomId: string) =>
+      invoke<JoinRoomResponse>('LeaveSeat', roomId),
+    [invoke],
+  )
+
   const updateWatcherAppearance = useCallback(
     (roomId: string, accent: string, character: number) =>
       invoke<void>('UpdateWatcherAppearance', roomId, accent, character),
@@ -103,6 +115,8 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     createRoom,
     enterRoom,
     watchRoom,
+    takeSeat,
+    leaveSeat,
     updateWatcherAppearance,
     reconnect,
     submitVote,

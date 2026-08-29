@@ -179,6 +179,34 @@ public class RoomTests
     }
 
     [Fact]
+    public void Reveal_RecordsHowManyPlayersWereSeated()
+    {
+        var room = CreateRoom(3);
+        room.SubmitVote("owner", "5");
+
+        room.Reveal();
+
+        var round = Assert.Single(room.ToSnapshot().History);
+        Assert.Equal(3, round.SeatedCount);
+        Assert.Single(round.Votes);
+    }
+
+    [Fact]
+    public void RevealedSnapshot_KeepsTheVoteOfAPlayerWhoLeft()
+    {
+        var room = CreateRoom();
+        room.SubmitVote("owner", "5");
+        room.SubmitVote("player-1", "8");
+        room.Reveal();
+
+        room.RemoveUser("player-1");
+
+        var snapshot = room.ToSnapshot();
+        Assert.Equal("8", snapshot.Votes["player-1"]);
+        Assert.DoesNotContain(snapshot.Players, p => p.Id == "player-1");
+    }
+
+    [Fact]
     public void Reveal_KeepsTheVoterNameAfterTheyLeave()
     {
         var room = CreateRoom();

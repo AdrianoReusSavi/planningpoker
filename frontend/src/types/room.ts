@@ -25,6 +25,7 @@ export interface RoundVote {
 export interface RoundRecord {
   round: number
   votes: RoundVote[]
+  seatedCount: number
   completedAt: string
 }
 
@@ -33,6 +34,9 @@ export type RoomJoinError =
   | 'ROOM_NOT_FOUND'
   | 'ROOM_FULL'
   | 'ALREADY_IN_ROOM'
+  | 'NOT_IN_ROOM'
+  | 'LAST_SEATED_PLAYER'
+  | 'ROUND_REVEALED'
   | 'UNKNOWN'
 
 export interface JoinRoomResponse {

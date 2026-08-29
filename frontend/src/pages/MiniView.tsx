@@ -55,6 +55,8 @@ export default function MiniView() {
     }))
   }, [snapshot])
 
+  const history = snapshot?.history ?? []
+  const revealedVotes = flipped ? (history[history.length - 1]?.votes ?? []).map(v => v.vote) : []
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
   const votedCount = players.filter(u => u.hasVoted).length
@@ -98,7 +100,7 @@ export default function MiniView() {
 
       <VoteSummary
         flipped={flipped}
-        players={players}
+        votes={revealedVotes}
         votingDeck={votingDeck}
       />
 

@@ -1,23 +1,21 @@
 import { useI18n } from '../contexts/I18nContext'
-import type { PlayerView } from './PlayerGrid'
 
 interface VoteSummaryProps {
   flipped: boolean
-  players: PlayerView[]
+  votes: string[]
   votingDeck: string[]
 }
 
-export default function VoteSummary({ flipped, players, votingDeck }: VoteSummaryProps) {
+export default function VoteSummary({ flipped, votes, votingDeck }: VoteSummaryProps) {
   const { t } = useI18n()
-  const hasVotes = players.some(p => p.vote)
 
-  if (!flipped || !hasVotes) {
+  if (!flipped || votes.length === 0) {
     return null
   }
 
   const numericDeck = votingDeck.map(Number).filter(n => !isNaN(n))
-  const numericVotes = players.map(p => parseFloat(p.vote)).filter(v => !isNaN(v))
-  const textVotes = players.map(p => p.vote).filter(v => v && isNaN(Number(v)))
+  const numericVotes = votes.map(v => parseFloat(v)).filter(v => !isNaN(v))
+  const textVotes = votes.filter(v => v && isNaN(Number(v)))
 
   if (numericVotes.length > 0 && numericDeck.length > 0) {
     const mean = numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length

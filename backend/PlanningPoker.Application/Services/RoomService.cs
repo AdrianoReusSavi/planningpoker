@@ -115,6 +115,52 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return WatchRoomOutcome.Success(new WatchRoomResult(roomId, watcherId, room.ToSnapshot()));
     }
 
+    public EnterRoomOutcome TakeSeat(string roomId, string connectionId)
+    {
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomNotFound);
+
+        var watcher = room.FindWatcherByConnectionId(connectionId);
+        if (watcher is null)
+            return EnterRoomOutcome.Failed(RoomJoinError.NotInRoom);
+
+        if (room.Phase == RoomPhase.Revealed)
+            return EnterRoomOutcome.Failed(RoomJoinError.RoundRevealed);
+
+        if (room.PlayerCount >= Room.MaxPlayersPerRoom)
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
+
+        room.TakeSeat(watcher.WatcherId);
+
+        return EnterRoomOutcome.Success(new EnterRoomResult(roomId, watcher.WatcherId, room.ToSnapshot()));
+    }
+
+    public WatchRoomOutcome LeaveSeat(string roomId, string connectionId)
+    {
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomNotFound);
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null)
+            return WatchRoomOutcome.Failed(RoomJoinError.NotInRoom);
+
+        if (room.Phase == RoomPhase.Revealed)
+            return WatchRoomOutcome.Failed(RoomJoinError.RoundRevealed);
+
+        if (room.PlayerCount == 1)
+            return WatchRoomOutcome.Failed(RoomJoinError.LastSeatedPlayer);
+
+        if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);
+
+        var (accents, characters) = room.UsedLooks();
+        room.LeaveSeat(user.PlayerId, NextAccent(accents), NextCharacter(characters));
+
+        return WatchRoomOutcome.Success(new WatchRoomResult(roomId, user.PlayerId, room.ToSnapshot()));
+    }
+
     public RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId)
     {
         if (string.IsNullOrWhiteSpace(roomId) || accent is null || !SolidColorRegex().IsMatch(accent))

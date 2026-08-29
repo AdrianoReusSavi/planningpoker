@@ -49,6 +49,24 @@ public class PlanningHub(
         return JoinRoomResponse.Accepted(outcome.Joined.WatcherId);
     }
 
+    public async Task<JoinRoomResponse> TakeSeat(string roomId)
+    {
+        var outcome = roomService.TakeSeat(roomId, Context.ConnectionId);
+        if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
+
+        await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        return JoinRoomResponse.Accepted(outcome.Joined.PlayerId);
+    }
+
+    public async Task<JoinRoomResponse> LeaveSeat(string roomId)
+    {
+        var outcome = roomService.LeaveSeat(roomId, Context.ConnectionId);
+        if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
+
+        await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        return JoinRoomResponse.Accepted(outcome.Joined.WatcherId);
+    }
+
     public async Task UpdateWatcherAppearance(string roomId, string accent, int character)
     {
         if (!IsActionAllowed()) return;
