@@ -6,5 +6,8 @@ public enum RoomJoinError
     InvalidName,
     RoomNotFound,
     RoomFull,
-    AlreadyInRoom
+    AlreadyInRoom,
+    NotInRoom,
+    LastSeatedPlayer,
+    RoundRevealed
 }

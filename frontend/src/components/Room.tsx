@@ -23,10 +23,20 @@ import StyleEditor from './StyleEditor'
 import BreakButton from './BreakButton'
 import WatcherList from './WatcherList'
 import WatcherEditor from './WatcherEditor'
+import { EyeIcon, SeatIcon, LoadingIcon } from './Icons'
+import type { RoomJoinError } from '../types/room'
+import type { TranslationKey } from '../i18n/locales'
 
 const PLAYER_STYLE_KEY = 'playerStyle'
 const PLAYER_PATTERN_KEY = 'playerPattern'
 const PLAYER_PATTERN_COLOR_KEY = 'playerPatternColor'
+
+const seatErrorKey = (taking: boolean, error: RoomJoinError | null | undefined): TranslationKey => {
+  if (error === 'ROOM_FULL') return taking ? 'seat.tableFull' : 'seat.benchFull'
+  if (error === 'LAST_SEATED_PLAYER') return 'seat.lastPlayer'
+  if (error === 'ROUND_REVEALED') return 'seat.revealed'
+  return 'seat.failed'
+}
 
 interface ModalState {
   title: string
@@ -51,6 +61,7 @@ export default function Room() {
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [styleEditorOpen, setStyleEditorOpen] = useState(false)
   const [watcherEditorOpen, setWatcherEditorOpen] = useState(false)
+  const [seatLoading, setSeatLoading] = useState(false)
   const hydratedRoomRef = useRef<string | null>(null)
 
   const roomId = snapshot?.id ?? ''
@@ -77,8 +88,12 @@ export default function Room() {
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
-  const votedPlayers = players.filter(u => u.vote)
-  const showFireworks = flipped && allVoted && votedPlayers.length > 1 && votedPlayers.every(u => u.vote === votedPlayers[0].vote)
+  const history = snapshot?.history ?? []
+  const revealedRound = flipped ? history[history.length - 1] : undefined
+  const revealedVotes = revealedRound?.votes.map(v => v.vote) ?? []
+  const showFireworks = revealedVotes.length > 1
+    && revealedVotes.length === revealedRound?.seatedCount
+    && revealedVotes.every(v => v === revealedVotes[0])
 
   const breakRequesters = snapshot?.breakRequesters ?? []
   const breakCount = breakRequesters.length
@@ -115,8 +130,8 @@ export default function Room() {
   }, [snapshot, playerId, vote, postToMini])
 
   useEffect(() => {
-    if (!flipped) setVote('')
-  }, [flipped])
+    if (!selfPlayer?.hasVoted) setVote('')
+  }, [selfPlayer?.hasVoted])
 
   const submitVote = async (value: string) => {
     if (!roomId) return
@@ -275,6 +290,24 @@ export default function Room() {
     }
   }, [roomId, playerId, selfPlayer, actions])
 
+  const toggleSeat = async () => {
+    if (!roomId) return
+    const taking = isWatching
+    setSeatLoading(true)
+    try {
+      const result = taking ? await actions.takeSeat(roomId) : await actions.leaveSeat(roomId)
+      if (result?.id) {
+        if (taking) hydratedRoomRef.current = null
+      } else {
+        showToast(t(seatErrorKey(taking, result?.error)), 'error')
+      }
+    } catch {
+      showToast(t('seat.failed'), 'error')
+    } finally {
+      setSeatLoading(false)
+    }
+  }
+
   const openMiniView = () => {
     window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
   }
@@ -286,7 +319,7 @@ export default function Room() {
           roomName={snapshot?.roomName ?? ''}
           status={status}
           leaveLoading={leaveLoading}
-          historyCount={snapshot?.history?.length ?? 0}
+          historyCount={history.length}
           watcherCount={snapshot?.watchers?.length ?? 0}
           onCopyLink={copyLink}
           onLeave={requestLeave}
@@ -333,7 +366,7 @@ export default function Room() {
           <div className="room-stage-center">
             <VoteSummary
               flipped={flipped}
-              players={players}
+              votes={revealedVotes}
               votingDeck={votingDeck}
             />
           </div>
@@ -364,6 +397,16 @@ export default function Room() {
             <div className="sidebar-section sidebar-section-extras">
               <ReactionBar onSend={sendReaction} />
               {!isWatching && <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />}
+              <button
+                type="button"
+                className="btn-seat"
+                onClick={toggleSeat}
+                disabled={seatLoading || flipped}
+                title={flipped ? t('seat.revealed') : isWatching ? t('seat.take') : t('seat.leave')}
+              >
+                {seatLoading ? <LoadingIcon /> : isWatching ? <SeatIcon /> : <EyeIcon />}
+                {isWatching ? t('seat.take') : t('seat.leave')}
+              </button>
             </div>
           </aside>
         )}
@@ -372,7 +415,7 @@ export default function Room() {
       <RoundHistory
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
-        history={snapshot?.history ?? []}
+        history={history}
       />
 
       <ReactionOverlay />

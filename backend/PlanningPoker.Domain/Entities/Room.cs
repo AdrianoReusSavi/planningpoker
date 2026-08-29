@@ -72,7 +72,7 @@ public class Room
                 .Select(u => new RoundVote(u.PlayerId, u.Username, u.Vote!))
                 .ToList();
 
-            _history.Add(new RoundRecord(_roundNumber, votes, DateTime.UtcNow));
+            _history.Add(new RoundRecord(_roundNumber, votes, Users.Count, DateTime.UtcNow));
             _roundNumber++;
 
             Phase = RoomPhase.Revealed;
@@ -140,6 +140,55 @@ public class Room
             if (watcher is null) return false;
             Watchers.Remove(watcher);
             return true;
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void TakeSeat(string participantId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == participantId)
+                ?? throw new InvalidOperationException("Watcher not found in room.");
+            if (Users.Count >= MaxPlayersPerRoom)
+                throw new InvalidOperationException("Room is full.");
+
+            Watchers.Remove(watcher);
+            Users.Add(new User
+            {
+                PlayerId = watcher.WatcherId,
+                ConnectionId = watcher.ConnectionId,
+                Username = watcher.Username,
+                Connected = watcher.Connected
+            });
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void LeaveSeat(string participantId, string accent, int character)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var user = Users.FirstOrDefault(u => u.PlayerId == participantId)
+                ?? throw new InvalidOperationException("Player not found in room.");
+            if (Users.Count == 1)
+                throw new InvalidOperationException("The last seated player cannot leave the table.");
+            if (Watchers.Count >= MaxWatchersPerRoom)
+                throw new InvalidOperationException("Room has too many watchers.");
+
+            Users.Remove(user);
+            _breakRequesters.Remove(participantId);
+            Watchers.Add(new Watcher
+            {
+                WatcherId = user.PlayerId,
+                ConnectionId = user.ConnectionId,
+                Username = user.Username,
+                Connected = user.Connected,
+                Accent = accent,
+                Character = character
+            });
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -340,10 +389,8 @@ public class Room
                 .Select(w => new WatcherSnapshot(w.WatcherId, w.Username, w.Connected, w.Accent, w.Character))
                 .ToList();
 
-            var votes = Phase == RoomPhase.Revealed
-                ? Users
-                    .Where(u => u.Vote is not null)
-                    .ToDictionary(u => u.PlayerId, u => u.Vote!)
+            var votes = Phase == RoomPhase.Revealed && _history.Count > 0
+                ? _history[^1].Votes.ToDictionary(v => v.PlayerId, v => v.Vote)
                 : EmptyVotes;
 
             return new RoomSnapshot(

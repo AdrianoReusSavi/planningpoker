@@ -1255,7 +1255,8 @@ body.has-room-sidebar .room-banners {
   font-size: clamp(9px, 1.2vh, 13px);
 }
 
-.sidebar-section-extras .btn-break {
+.sidebar-section-extras .btn-break,
+.sidebar-section-extras .btn-seat {
   font-size: clamp(0.72rem, 1.2vh, 0.92rem);
   padding: clamp(4px, 1vh, 8px) 12px;
 }
@@ -1291,7 +1292,8 @@ body.has-room-sidebar .room-banners {
   padding: 4px 6px;
 }
 
-.sidebar-section-extras .btn-break {
+.sidebar-section-extras .btn-break,
+.sidebar-section-extras .btn-seat {
   width: 100%;
   justify-content: center;
 }
@@ -2139,6 +2141,31 @@ body.has-room-sidebar .toast-container {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-seat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-seat:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.btn-seat:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .btn-break:hover {
