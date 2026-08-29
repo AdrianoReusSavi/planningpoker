@@ -79,7 +79,8 @@ const locales = {
 
     // Connection Banner
     'banner.reconnecting': 'Reconectando... Aguarde um momento.',
-    'banner.disconnected': 'Conexao perdida. Recarregue a pagina.',
+    'banner.disconnected': 'Conexão perdida. Tentando de novo.',
+    'banner.retryNow': 'Tentar agora',
 
     // Modal
     'modal.leave.title': 'Sair da sala',
@@ -240,7 +241,8 @@ const locales = {
     'status.disconnected': 'Disconnected',
 
     'banner.reconnecting': 'Reconnecting... Please wait.',
-    'banner.disconnected': 'Connection lost. Please reload the page.',
+    'banner.disconnected': 'Connection lost. Trying again.',
+    'banner.retryNow': 'Retry now',
 
     'modal.leave.title': 'Leave room',
     'modal.leave.message': 'Are you sure you want to leave? You will be removed from the vote.',
@@ -392,7 +394,8 @@ const locales = {
     'status.disconnected': 'Desconectado',
 
     'banner.reconnecting': 'Reconectando... Espere un momento.',
-    'banner.disconnected': 'Conexion perdida. Recargue la pagina.',
+    'banner.disconnected': 'Conexión perdida. Intentando de nuevo.',
+    'banner.retryNow': 'Intentar ahora',
 
     'modal.leave.title': 'Salir de la sala',
     'modal.leave.message': '¿Estás seguro de que deseas salir? Serás removido de la votación.',
