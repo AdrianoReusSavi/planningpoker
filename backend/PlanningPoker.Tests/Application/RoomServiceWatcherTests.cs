@@ -451,6 +451,36 @@ public class RoomServiceWatcherTests
     }
 
     [Fact]
+    public void Watcher_CanAskForABreak()
+    {
+        var (service, roomId, _, _) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
+        Assert.NotNull(watch);
+
+        var asked = service.ToggleBreakRequest(roomId, "conn-watch");
+
+        Assert.NotNull(asked);
+        Assert.Contains(watch!.WatcherId, asked!.BreakRequesters);
+
+        var withdrawn = service.ToggleBreakRequest(roomId, "conn-watch");
+        Assert.DoesNotContain(watch.WatcherId, withdrawn!.BreakRequesters);
+    }
+
+    [Fact]
+    public void Watcher_LeavingTakesTheBreakRequestAlong()
+    {
+        var (service, roomId, _, _) = Setup();
+        var watch = service.WatchRoom(roomId, "Observer", "conn-watch").Joined;
+        Assert.NotNull(watch);
+        service.ToggleBreakRequest(roomId, "conn-watch");
+
+        var leave = service.LeaveRoom(roomId, "conn-watch");
+
+        Assert.NotNull(leave?.Snapshot);
+        Assert.DoesNotContain(watch!.WatcherId, leave!.Snapshot!.BreakRequesters);
+    }
+
+    [Fact]
     public void WatcherLeader_ClearsBreakRequests()
     {
         var (service, roomId, _, ownerConn) = Setup();

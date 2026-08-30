@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Api.Contracts;
 using PlanningPoker.Application.Interfaces;
 using PlanningPoker.Domain.Enums;
+using PlanningPoker.Domain.Snapshots;
 
 namespace PlanningPoker.Api.Hubs;
 
@@ -12,6 +13,7 @@ public class PlanningHub(
     ILogger<PlanningHub> logger) : Hub
 {
     private static readonly ConcurrentDictionary<string, CancellationTokenSource> DisconnectTimers = new();
+    private static readonly ConcurrentDictionary<string, CancellationTokenSource> AutoRevealTimers = new();
     private static readonly ConcurrentDictionary<string, DateTime> LastActionTime = new();
     private static readonly TimeSpan ActionCooldown = TimeSpan.FromMilliseconds(200);
     private const int DisconnectTimeoutSeconds = 300;
@@ -36,6 +38,7 @@ public class PlanningHub(
 
         await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Joined.RoomId);
         await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        EvaluateAutoReveal(outcome.Joined.RoomId, outcome.Joined.Snapshot);
         return JoinRoomResponse.Accepted(outcome.Joined.PlayerId);
     }
 
@@ -55,6 +58,7 @@ public class PlanningHub(
         if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
         await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        EvaluateAutoReveal(outcome.Joined.RoomId, outcome.Joined.Snapshot);
         return JoinRoomResponse.Accepted(outcome.Joined.PlayerId);
     }
 
@@ -64,6 +68,7 @@ public class PlanningHub(
         if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
         await Clients.Group(outcome.Joined.RoomId).SendAsync("STATE_SYNC", outcome.Joined.Snapshot);
+        EvaluateAutoReveal(outcome.Joined.RoomId, outcome.Joined.Snapshot);
         return JoinRoomResponse.Accepted(outcome.Joined.WatcherId);
     }
 
@@ -87,6 +92,9 @@ public class PlanningHub(
         return true;
     }
 
+    public string? GetRoomName(string roomId)
+        => roomService.GetRoomName(roomId);
+
     public async Task GetRoomSettings()
     {
         var snapshot = roomService.GetRoomSettings(Context.ConnectionId);
@@ -106,8 +114,32 @@ public class PlanningHub(
         if (!IsActionAllowed()) return;
 
         var snapshot = roomService.SubmitVote(roomId, vote, Context.ConnectionId);
-        if (snapshot is not null)
-            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot, restart: true);
+    }
+
+    public async Task SetAutoReveal(string roomId, bool enabled)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.SetAutoReveal(roomId, enabled, Context.ConnectionId);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot, restart: true);
+    }
+
+    public async Task ClearVote(string roomId)
+    {
+        if (!IsActionAllowed()) return;
+
+        var snapshot = roomService.ClearVote(roomId, Context.ConnectionId);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot, restart: true);
     }
 
     public async Task RevealVotes(string roomId)
@@ -115,8 +147,10 @@ public class PlanningHub(
         if (!IsActionAllowed()) return;
 
         var snapshot = roomService.RevealVotes(roomId, Context.ConnectionId);
-        if (snapshot is not null)
-            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot);
     }
 
     public async Task ResetVotes(string roomId)
@@ -124,8 +158,10 @@ public class PlanningHub(
         if (!IsActionAllowed()) return;
 
         var snapshot = roomService.ResetVotes(roomId, Context.ConnectionId);
-        if (snapshot is not null)
-            await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot);
     }
 
     public async Task KickPlayer(string roomId, string targetPlayerId)
@@ -138,6 +174,7 @@ public class PlanningHub(
         await Groups.RemoveFromGroupAsync(result.TargetConnectionId, roomId);
         await Clients.Client(result.TargetConnectionId).SendAsync("KICKED");
         await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
+        EvaluateAutoReveal(roomId, result.Snapshot);
     }
 
     public async Task ToggleBreakRequest(string roomId)
@@ -208,7 +245,10 @@ public class PlanningHub(
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
 
         if (result.Snapshot is not null)
+        {
             await Clients.Group(roomId).SendAsync("STATE_SYNC", result.Snapshot);
+            EvaluateAutoReveal(roomId, result.Snapshot);
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? ex)
@@ -235,6 +275,50 @@ public class PlanningHub(
         return true;
     }
 
+    private void EvaluateAutoReveal(string roomId, RoomSnapshot snapshot, bool restart = false)
+        => EvaluateAutoReveal(roomService, hubContext, roomId, snapshot, restart);
+
+    private static void EvaluateAutoReveal(
+        IRoomService service,
+        IHubContext<PlanningHub> context,
+        string roomId,
+        RoomSnapshot snapshot,
+        bool restart = false)
+    {
+        if (!snapshot.AutoRevealEnabled || !snapshot.EveryoneVoted)
+        {
+            CancelAutoReveal(roomId);
+            return;
+        }
+
+        if (!restart && AutoRevealTimers.ContainsKey(roomId))
+            return;
+
+        CancelAutoReveal(roomId);
+        var cts = new CancellationTokenSource();
+        AutoRevealTimers[roomId] = cts;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(snapshot.AutoRevealSeconds), cts.Token);
+                AutoRevealTimers.TryRemove(roomId, out _);
+
+                var revealed = service.AutoReveal(roomId);
+                if (revealed is not null)
+                    await context.Clients.Group(roomId).SendAsync("STATE_SYNC", revealed);
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    private static void CancelAutoReveal(string roomId)
+    {
+        if (AutoRevealTimers.TryRemove(roomId, out var cts))
+            cts.Cancel();
+    }
+
     private static void CancelDisconnectTimer(string playerId)
     {
         if (DisconnectTimers.TryRemove(playerId, out var cts))
@@ -258,7 +342,10 @@ public class PlanningHub(
                 DisconnectTimers.TryRemove(playerId, out _);
                 var removal = service.PermanentlyRemovePlayer(roomId, playerId);
                 if (removal.Snapshot is not null)
+                {
                     await context.Clients.Group(roomId).SendAsync("STATE_SYNC", removal.Snapshot);
+                    EvaluateAutoReveal(service, context, roomId, removal.Snapshot);
+                }
             }
             catch (OperationCanceledException) { }
             catch (Exception removeEx)

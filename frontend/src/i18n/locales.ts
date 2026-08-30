@@ -81,6 +81,11 @@ const locales = {
     'banner.reconnecting': 'Reconectando... Aguarde um momento.',
     'banner.disconnected': 'Conexão perdida. Tentando de novo.',
     'banner.retryNow': 'Tentar agora',
+    'room.revealingIn': 'Revelando em {seconds}s',
+    'room.autoReveal': 'Revelar sozinho',
+    'room.autoRevealOn': 'Revelar sozinho: ligado',
+    'room.autoRevealOff': 'Revelar sozinho: desligado',
+    'room.autoRevealError': 'Não foi possível mudar a revelação automática.',
 
     // Modal
     'modal.leave.title': 'Sair da sala',
@@ -243,6 +248,11 @@ const locales = {
     'banner.reconnecting': 'Reconnecting... Please wait.',
     'banner.disconnected': 'Connection lost. Trying again.',
     'banner.retryNow': 'Retry now',
+    'room.revealingIn': 'Revealing in {seconds}s',
+    'room.autoReveal': 'Reveal on its own',
+    'room.autoRevealOn': 'Reveal on its own: on',
+    'room.autoRevealOff': 'Reveal on its own: off',
+    'room.autoRevealError': 'Could not change the automatic reveal.',
 
     'modal.leave.title': 'Leave room',
     'modal.leave.message': 'Are you sure you want to leave? You will be removed from the vote.',
@@ -396,6 +406,11 @@ const locales = {
     'banner.reconnecting': 'Reconectando... Espere un momento.',
     'banner.disconnected': 'Conexión perdida. Intentando de nuevo.',
     'banner.retryNow': 'Intentar ahora',
+    'room.revealingIn': 'Revelando en {seconds}s',
+    'room.autoReveal': 'Revelar solo',
+    'room.autoRevealOn': 'Revelar solo: activado',
+    'room.autoRevealOff': 'Revelar solo: desactivado',
+    'room.autoRevealError': 'No se pudo cambiar la revelación automática.',
 
     'modal.leave.title': 'Salir de la sala',
     'modal.leave.message': '¿Estás seguro de que deseas salir? Serás removido de la votación.',
