@@ -44,6 +44,12 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
+  const getRoomName = useCallback(
+    (roomId: string) =>
+      invoke<string>('GetRoomName', roomId),
+    [invoke],
+  )
+
   const reconnect = useCallback(
     (roomId: string, playerId: string) =>
       invoke<boolean>('Reconnect', roomId, playerId),
@@ -53,6 +59,18 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
   const submitVote = useCallback(
     (roomId: string, vote: string) =>
       invoke<void>('SubmitVote', roomId, vote),
+    [invoke],
+  )
+
+  const clearVote = useCallback(
+    (roomId: string) =>
+      invoke<void>('ClearVote', roomId),
+    [invoke],
+  )
+
+  const setAutoReveal = useCallback(
+    (roomId: string, enabled: boolean) =>
+      invoke<void>('SetAutoReveal', roomId, enabled),
     [invoke],
   )
 
@@ -115,11 +133,14 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     createRoom,
     enterRoom,
     watchRoom,
+    getRoomName,
     takeSeat,
     leaveSeat,
     updateWatcherAppearance,
     reconnect,
     submitVote,
+    clearVote,
+    setAutoReveal,
     revealVotes,
     resetVotes,
     leaveRoom,

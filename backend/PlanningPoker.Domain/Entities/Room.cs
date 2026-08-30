@@ -20,6 +20,9 @@ public class Room
     private readonly HashSet<string> _breakRequesters = [];
     private int _roundNumber = 1;
 
+    public bool AutoRevealEnabled { get; private set; } = true;
+
+    public const int AutoRevealSeconds = 3;
     public const int MaxPlayersPerRoom = 10;
     public const int MaxWatchersPerRoom = 10;
     public const int WatcherCharacterCount = 6;
@@ -55,6 +58,29 @@ public class Room
                 ?? throw new InvalidOperationException("Player not found in room.");
 
             user.Vote = value.Trim();
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void SetAutoReveal(bool enabled)
+    {
+        _lock.EnterWriteLock();
+        try { AutoRevealEnabled = enabled; }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void ClearVote(string playerId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Phase != RoomPhase.Voting)
+                throw new InvalidOperationException("Votes can only be cleared during VOTING phase.");
+
+            var user = Users.FirstOrDefault(u => u.PlayerId == playerId)
+                ?? throw new InvalidOperationException("Player not found in room.");
+
+            user.Vote = null;
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -141,6 +167,7 @@ public class Room
             var watcher = Watchers.FirstOrDefault(w => w.WatcherId == watcherId);
             if (watcher is null) return false;
             Watchers.Remove(watcher);
+            _breakRequesters.Remove(watcherId);
             return true;
         }
         finally { _lock.ExitWriteLock(); }
@@ -179,7 +206,6 @@ public class Room
                 throw new InvalidOperationException("Room has too many watchers.");
 
             Users.Remove(user);
-            _breakRequesters.Remove(participantId);
             Watchers.Add(new Watcher
             {
                 WatcherId = user.PlayerId,
@@ -240,16 +266,18 @@ public class Room
         finally { _lock.ExitReadLock(); }
     }
 
-    public bool ToggleBreakRequest(string playerId)
+    public bool ToggleBreakRequest(string participantId)
     {
         _lock.EnterWriteLock();
         try
         {
-            if (!Users.Any(u => u.PlayerId == playerId))
-                throw new InvalidOperationException("Player not found in room.");
+            var belongsToTheRoom = Users.Any(u => u.PlayerId == participantId)
+                || Watchers.Any(w => w.WatcherId == participantId);
+            if (!belongsToTheRoom)
+                throw new InvalidOperationException("Participant not found in room.");
 
-            if (_breakRequesters.Add(playerId)) return true;
-            _breakRequesters.Remove(playerId);
+            if (_breakRequesters.Add(participantId)) return true;
+            _breakRequesters.Remove(participantId);
             return false;
         }
         finally { _lock.ExitWriteLock(); }
@@ -403,7 +431,9 @@ public class Room
                 watchers,
                 votes,
                 _history.ToList(),
-                _breakRequesters.ToList()
+                _breakRequesters.ToList(),
+                AutoRevealEnabled,
+                AutoRevealSeconds
             );
         }
         finally { _lock.ExitReadLock(); }

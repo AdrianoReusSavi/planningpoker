@@ -21,10 +21,12 @@ const errorKey = (mode: 'play' | 'watch', error: RoomJoinError | null | undefine
 
 interface EnterRoomProps {
   roomId: string
+  roomName: string | null
+  roomMissing: boolean
   onGoToCreate: () => void
 }
 
-export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
+export default function EnterRoom({ roomId, roomName, roomMissing, onGoToCreate }: EnterRoomProps) {
   const { connection, connected } = useConnection()
   const { setPlayerId } = useRoom()
   const { enterRoom, watchRoom } = useRoomActions(connection, connected)
@@ -61,18 +63,18 @@ export default function EnterRoom({ roomId, onGoToCreate }: EnterRoomProps) {
         onKeyDown={(e) => e.key === 'Enter' && handleEnter()}
         maxLength={50}
       />
-      <input type="password" value={roomId} disabled />
+      <input type="text" value={roomName ?? ''} disabled />
       <div className="button-row">
         <button
           onClick={handleEnter}
-          disabled={!username.trim() || !roomId || !connected || loading !== null}
+          disabled={!username.trim() || !roomId || !connected || roomMissing || loading !== null}
         >
           {loading === 'play' && <LoadingIcon />} {loading === 'play' ? t('enter.loading') : t('enter.submit')}
         </button>
         <button
           className="watch"
           onClick={() => join('watch')}
-          disabled={!username.trim() || !roomId || !connected || loading !== null}
+          disabled={!username.trim() || !roomId || !connected || roomMissing || loading !== null}
           title={t('enter.watchHint')}
         >
           {loading === 'watch' && <LoadingIcon />} {loading === 'watch' ? t('enter.loading') : t('enter.watch')}

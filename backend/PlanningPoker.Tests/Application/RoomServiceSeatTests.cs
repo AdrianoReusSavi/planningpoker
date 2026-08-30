@@ -100,7 +100,7 @@ public class RoomServiceSeatTests
     }
 
     [Fact]
-    public void LeaveSeat_ClearsTheBreakRequest()
+    public void LeaveSeat_KeepsTheBreakRequest()
     {
         var (service, roomId, ownerId, ownerConn) = Setup();
         Assert.NotNull(service.EnterRoom(roomId, "Player", "conn-player").Joined);
@@ -109,7 +109,20 @@ public class RoomServiceSeatTests
         var watching = service.LeaveSeat(roomId, ownerConn).Joined;
 
         Assert.NotNull(watching);
-        Assert.DoesNotContain(ownerId, watching!.Snapshot.BreakRequesters);
+        Assert.Contains(ownerId, watching!.Snapshot.BreakRequesters);
+    }
+
+    [Fact]
+    public void TakeSeat_KeepsTheBreakRequest()
+    {
+        var (service, roomId, _, _) = Setup();
+        var watcherId = Watch(service, roomId, "Observer", "conn-watch");
+        service.ToggleBreakRequest(roomId, "conn-watch");
+
+        var seated = service.TakeSeat(roomId, "conn-watch").Joined;
+
+        Assert.NotNull(seated);
+        Assert.Contains(watcherId, seated!.Snapshot.BreakRequesters);
     }
 
     [Fact]

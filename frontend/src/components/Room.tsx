@@ -3,6 +3,7 @@ import { useConnection } from '../contexts/ConnectionContext'
 import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useBroadcastChannel } from '../hooks/useBroadcastChannel'
+import { miniChannel } from '../hooks/miniChannel'
 import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { getDeckByKey } from '../constants/estimationOptions'
@@ -23,6 +24,7 @@ import StyleEditor from './StyleEditor'
 import BreakButton from './BreakButton'
 import WatcherList from './WatcherList'
 import WatcherEditor from './WatcherEditor'
+import AutoRevealCountdown from './AutoRevealCountdown'
 import { EyeIcon, SeatIcon, LoadingIcon } from './Icons'
 import type { RoomJoinError } from '../types/room'
 import type { TranslationKey } from '../i18n/locales'
@@ -98,15 +100,39 @@ export default function Room() {
   const breakCount = breakRequesters.length
   const hasActiveBreakRequest = playerId !== null && breakRequesters.includes(playerId)
 
+  const toggleSeat = useCallback(async () => {
+    if (!roomId) return
+    const taking = isWatching
+    setSeatLoading(true)
+    try {
+      const result = taking ? await actions.takeSeat(roomId) : await actions.leaveSeat(roomId)
+      if (result?.id) {
+        if (taking) hydratedRoomRef.current = null
+      } else {
+        showToast(t(seatErrorKey(taking, result?.error)), 'error')
+      }
+    } catch {
+      showToast(t('seat.failed'), 'error')
+    } finally {
+      setSeatLoading(false)
+    }
+  }, [roomId, isWatching, actions, showToast, t])
+
   const postRef = useRef<(data: unknown) => void>(() => {})
-  const postToMini = useBroadcastChannel('planning-poker-sync', useCallback((data: Record<string, unknown>) => {
+  const postToMini = useBroadcastChannel(miniChannel(playerId), useCallback((data: Record<string, unknown>) => {
     if (data.type === 'MINI_OPENED') {
       setMiniViewOpen(true)
     } else if (data.type === 'MINI_CLOSED') {
       setMiniViewOpen(false)
     } else if (data.type === 'VOTE' && roomId) {
-      setVote(data.value as string)
-      actions.submitVote(roomId, data.value as string).catch(() => {})
+      const value = data.value as string
+      if (value === vote) {
+        setVote('')
+        actions.clearVote(roomId).catch(() => {})
+      } else {
+        setVote(value)
+        actions.submitVote(roomId, value).catch(() => {})
+      }
     } else if (data.type === 'REVEAL' && roomId) {
       actions.revealVotes(roomId).catch(() => {})
     } else if (data.type === 'RESET' && roomId) {
@@ -115,10 +141,12 @@ export default function Room() {
       actions.sendReaction(roomId, data.value as string).catch(() => {})
     } else if (data.type === 'BREAK' && roomId) {
       actions.toggleBreakRequest(roomId).catch(() => {})
+    } else if (data.type === 'SEAT') {
+      toggleSeat()
     } else if (data.type === 'REQUEST_SYNC' && snapshot && playerId) {
       postRef.current({ type: 'SYNC', snapshot, playerId, vote })
     }
-  }, [roomId, snapshot, playerId, vote]))
+  }, [roomId, snapshot, playerId, vote, toggleSeat]))
 
   postRef.current = postToMini
 
@@ -134,6 +162,18 @@ export default function Room() {
 
   const submitVote = async (value: string) => {
     if (!roomId) return
+
+    if (value === vote) {
+      setVote('')
+      try {
+        await actions.clearVote(roomId)
+      } catch {
+        showToast(t('room.voteError'), 'error')
+        setVote(value)
+      }
+      return
+    }
+
     setVote(value)
     try {
       await actions.submitVote(roomId, value)
@@ -289,26 +329,22 @@ export default function Room() {
     }
   }, [roomId, playerId, selfPlayer, actions])
 
-  const toggleSeat = async () => {
+
+  const toggleAutoReveal = async () => {
     if (!roomId) return
-    const taking = isWatching
-    setSeatLoading(true)
     try {
-      const result = taking ? await actions.takeSeat(roomId) : await actions.leaveSeat(roomId)
-      if (result?.id) {
-        if (taking) hydratedRoomRef.current = null
-      } else {
-        showToast(t(seatErrorKey(taking, result?.error)), 'error')
-      }
+      await actions.setAutoReveal(roomId, !(snapshot?.autoRevealEnabled ?? true))
     } catch {
-      showToast(t('seat.failed'), 'error')
-    } finally {
-      setSeatLoading(false)
+      showToast(t('room.autoRevealError'), 'error')
     }
   }
 
   const openMiniView = () => {
-    window.open('/mini', 'planning-poker-mini', 'width=520,height=400,resizable=yes,scrollbars=no')
+    window.open(
+      `/mini?owner=${encodeURIComponent(playerId ?? '')}`,
+      `planning-poker-mini-${playerId ?? 'none'}`,
+      'width=520,height=400,resizable=yes,scrollbars=no',
+    )
   }
 
   return (
@@ -320,6 +356,9 @@ export default function Room() {
           leaveLoading={leaveLoading}
           historyCount={history.length}
           watcherCount={snapshot?.watchers?.length ?? 0}
+          isLeader={isLeader}
+          autoRevealEnabled={snapshot?.autoRevealEnabled ?? true}
+          onToggleAutoReveal={toggleAutoReveal}
           onCopyLink={copyLink}
           onLeave={requestLeave}
           onOpenHistory={() => setHistoryOpen(true)}
@@ -368,6 +407,10 @@ export default function Room() {
               votes={revealedVotes}
               votingDeck={votingDeck}
             />
+            <AutoRevealCountdown
+              active={!flipped && (snapshot?.everyoneVoted ?? false) && (snapshot?.autoRevealEnabled ?? false)}
+              seconds={snapshot?.autoRevealSeconds ?? 0}
+            />
           </div>
         </div>
 
@@ -395,7 +438,7 @@ export default function Room() {
             </div>}
             <div className="sidebar-section sidebar-section-extras">
               <ReactionBar onSend={sendReaction} />
-              {!isWatching && <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />}
+              <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
               <button
                 type="button"
                 className="btn-seat"

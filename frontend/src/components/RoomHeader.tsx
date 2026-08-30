@@ -1,6 +1,6 @@
 import { useI18n } from '../contexts/I18nContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon, ExternalLinkIcon, SunIcon, MoonIcon, EyeIcon } from './Icons'
+import { CopyIcon, LogOutIcon, LoadingIcon, HistoryIcon, ExternalLinkIcon, SunIcon, MoonIcon, EyeIcon, EyeOffIcon } from './Icons'
 import LocalePicker from './LocalePicker'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
@@ -11,13 +11,16 @@ interface RoomHeaderProps {
   leaveLoading: boolean
   historyCount: number
   watcherCount: number
+  isLeader: boolean
+  autoRevealEnabled: boolean
+  onToggleAutoReveal: () => void
   onCopyLink: () => void
   onLeave: () => void
   onOpenHistory: () => void
   onOpenMiniView: () => void
 }
 
-export default function RoomHeader({ roomName, status, leaveLoading, historyCount, watcherCount, onCopyLink, onLeave, onOpenHistory, onOpenMiniView }: RoomHeaderProps) {
+export default function RoomHeader({ roomName, status, leaveLoading, historyCount, watcherCount, isLeader, autoRevealEnabled, onToggleAutoReveal, onCopyLink, onLeave, onOpenHistory, onOpenMiniView }: RoomHeaderProps) {
   const { t } = useI18n()
   const { isDark, toggle } = useTheme()
 
@@ -39,6 +42,19 @@ export default function RoomHeader({ roomName, status, leaveLoading, historyCoun
         )}
       </div>
       <div className="room-header-right">
+        {isLeader && (
+          <div className="auto-reveal-switch">
+            <span className="auto-reveal-label">{t('room.autoReveal')}</span>
+            <button
+              className={`btn-icon ${autoRevealEnabled ? 'active' : ''}`}
+              onClick={onToggleAutoReveal}
+              aria-pressed={autoRevealEnabled}
+              aria-label={autoRevealEnabled ? t('room.autoRevealOn') : t('room.autoRevealOff')}
+            >
+              {autoRevealEnabled ? <EyeIcon /> : <EyeOffIcon />}
+            </button>
+          </div>
+        )}
         <LocalePicker />
         <button className="btn-icon" onClick={toggle} title={isDark ? t('header.lightMode') : t('header.darkMode')}>
           {isDark ? <SunIcon /> : <MoonIcon />}

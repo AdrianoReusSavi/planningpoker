@@ -54,4 +54,7 @@ export interface RoomSnapshot {
   votes: Record<string, string>
   history: RoundRecord[]
   breakRequesters: string[]
+  everyoneVoted: boolean
+  autoRevealEnabled: boolean
+  autoRevealSeconds: number
 }

@@ -242,6 +242,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return new ReconnectResult(roomId, oldConnectionId, room.ToSnapshot());
     }
 
+    public string? GetRoomName(string roomId)
+        => repository.GetRoom(roomId)?.RoomName;
+
     public RoomSnapshot? GetRoomSettings(string connectionId)
     {
         var roomId = repository.GetRoomIdByConnection(connectionId);
@@ -292,6 +295,54 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         try
         {
             room.SubmitVote(user.PlayerId, vote);
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? SetAutoReveal(string roomId, bool enabled, string connectionId)
+    {
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        if (!IsOwnedBy(room, connectionId))
+            return null;
+
+        room.SetAutoReveal(enabled);
+        return room.ToSnapshot();
+    }
+
+    public RoomSnapshot? ClearVote(string roomId, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null)
+            return null;
+
+        try
+        {
+            room.ClearVote(user.PlayerId);
+            return room.ToSnapshot();
+        }
+        catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? AutoReveal(string roomId)
+    {
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        try
+        {
+            room.Reveal();
             return room.ToSnapshot();
         }
         catch (InvalidOperationException) { return null; }
@@ -381,13 +432,13 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return null;
 
-        var user = room.FindByConnectionId(connectionId);
-        if (user is null)
+        var participantId = ParticipantId(room, connectionId);
+        if (participantId is null)
             return null;
 
         try
         {
-            room.ToggleBreakRequest(user.PlayerId);
+            room.ToggleBreakRequest(participantId);
             return room.ToSnapshot();
         }
         catch (InvalidOperationException) { return null; }

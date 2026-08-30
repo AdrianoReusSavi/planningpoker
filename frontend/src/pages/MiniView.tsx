@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RoomSnapshot } from '../types/room'
 import { useBroadcastChannel } from '../hooks/useBroadcastChannel'
+import { miniChannel } from '../hooks/miniChannel'
 import { useI18n } from '../contexts/I18nContext'
 import { getDeckByKey } from '../constants/estimationOptions'
 import VoteSummary from '../components/VoteSummary'
+import AutoRevealCountdown from '../components/AutoRevealCountdown'
 import VotingControls from '../components/VotingControls'
 import VotingDeck from '../components/VotingDeck'
 import ReactionBar from '../components/ReactionBar'
 import BreakButton from '../components/BreakButton'
+import { EyeIcon, SeatIcon } from '../components/Icons'
 import type { PlayerView } from '../components/PlayerGrid'
 
 export default function MiniView() {
@@ -16,7 +19,9 @@ export default function MiniView() {
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [vote, setVote] = useState('')
 
-  const postMessage = useBroadcastChannel('planning-poker-sync', useCallback((data: Record<string, unknown>) => {
+  const [owner] = useState(() => new URLSearchParams(window.location.search).get('owner'))
+
+  const postMessage = useBroadcastChannel(miniChannel(owner), useCallback((data: Record<string, unknown>) => {
     if (data.type === 'SYNC') {
       setSnapshot(data.snapshot as RoomSnapshot)
       setPlayerId(data.playerId as string)
@@ -57,6 +62,7 @@ export default function MiniView() {
 
   const history = snapshot?.history ?? []
   const revealedVotes = flipped ? (history[history.length - 1]?.votes ?? []).map(v => v.vote) : []
+  const isWatching = playerId !== null && (snapshot?.watchers.some(w => w.id === playerId) ?? false)
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
   const votedCount = players.filter(u => u.hasVoted).length
@@ -66,7 +72,7 @@ export default function MiniView() {
   }, [flipped])
 
   const submitVote = (value: string) => {
-    setVote(value)
+    setVote(value === vote ? '' : value)
     postMessage({ type: 'VOTE', value })
   }
 
@@ -74,6 +80,7 @@ export default function MiniView() {
   const resetVotes = () => postMessage({ type: 'RESET' })
   const sendReaction = (key: string) => postMessage({ type: 'REACTION', value: key })
   const toggleBreakRequest = () => postMessage({ type: 'BREAK' })
+  const toggleSeat = () => postMessage({ type: 'SEAT' })
 
   const breakRequesters = snapshot?.breakRequesters ?? []
   const hasActiveBreakRequest = playerId !== null && breakRequesters.includes(playerId)
@@ -104,6 +111,11 @@ export default function MiniView() {
         votingDeck={votingDeck}
       />
 
+      <AutoRevealCountdown
+        active={!flipped && snapshot.everyoneVoted && snapshot.autoRevealEnabled}
+        seconds={snapshot.autoRevealSeconds}
+      />
+
       <VotingControls
         isLeader={isLeader}
         flipped={flipped}
@@ -115,16 +127,28 @@ export default function MiniView() {
         onReset={resetVotes}
       />
 
-      <VotingDeck
-        cards={votingDeck}
-        selectedVote={vote}
-        onVote={submitVote}
-        disabled={flipped}
-      />
+      {!isWatching && (
+        <VotingDeck
+          cards={votingDeck}
+          selectedVote={vote}
+          onVote={submitVote}
+          disabled={flipped}
+        />
+      )}
 
       <div className="mini-view-reactions">
         <ReactionBar onSend={sendReaction} />
         <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
+        <button
+          type="button"
+          className="btn-seat"
+          onClick={toggleSeat}
+          disabled={flipped}
+          title={flipped ? t('seat.revealed') : isWatching ? t('seat.take') : t('seat.leave')}
+        >
+          {isWatching ? <SeatIcon /> : <EyeIcon />}
+          {isWatching ? t('seat.take') : t('seat.leave')}
+        </button>
       </div>
     </div>
   )

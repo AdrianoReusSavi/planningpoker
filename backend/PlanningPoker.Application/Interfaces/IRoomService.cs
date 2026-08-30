@@ -13,9 +13,13 @@ public interface IRoomService
     WatchRoomOutcome LeaveSeat(string roomId, string connectionId);
     RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId);
     ReconnectResult? Reconnect(string roomId, string playerId, string connectionId);
+    string? GetRoomName(string roomId);
     RoomSnapshot? GetRoomSettings(string connectionId);
     RoomSnapshot? TransferOwnership(string roomId, string targetPlayerId, string connectionId);
     RoomSnapshot? SubmitVote(string roomId, string vote, string connectionId);
+    RoomSnapshot? SetAutoReveal(string roomId, bool enabled, string connectionId);
+    RoomSnapshot? ClearVote(string roomId, string connectionId);
+    RoomSnapshot? AutoReveal(string roomId);
     RoomSnapshot? RevealVotes(string roomId, string connectionId);
     RoomSnapshot? ResetVotes(string roomId, string connectionId);
     KickResult? KickPlayer(string roomId, string targetPlayerId, string connectionId);
