@@ -123,12 +123,19 @@ public class Room
 
     public void AddUser(User user)
     {
+        if (!TryAddUser(user))
+            throw new InvalidOperationException("Room is full.");
+    }
+
+    public bool TryAddUser(User user)
+    {
         _lock.EnterWriteLock();
         try
         {
             if (Users.Count >= MaxPlayersPerRoom)
-                throw new InvalidOperationException("Room is full.");
+                return false;
             Users.Add(user);
+            return true;
         }
         finally { _lock.ExitWriteLock(); }
     }
