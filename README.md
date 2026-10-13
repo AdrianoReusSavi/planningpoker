@@ -50,7 +50,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 - Mini-view popup with deck, controls, reactions and break button — synced via BroadcastChannel
 - Dark/Light mode
 - i18n: Portuguese, English, Spanish
-- Automatic reconnection with 20s grace period
+- Automatic reconnection with a 5-minute grace period
 - Thread-safe room state with ReaderWriterLockSlim
 - Per-action cooldown (200ms) on the hub against rapid-fire spam
 

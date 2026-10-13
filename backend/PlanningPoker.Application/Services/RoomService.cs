@@ -88,11 +88,13 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return EnterRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
-        if (room.PlayerCount >= Room.MaxPlayersPerRoom)
-            return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
+        if (repository.HasConnection(connectionId))
+            return EnterRoomOutcome.Failed(RoomJoinError.AlreadyInRoom);
 
         var playerId = Guid.NewGuid().ToString();
-        room.AddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim() });
+        if (!room.TryAddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim() }))
+            return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
+
         repository.MapConnection(connectionId, roomId);
 
         return EnterRoomOutcome.Success(new EnterRoomResult(roomId, playerId, room.ToSnapshot()));

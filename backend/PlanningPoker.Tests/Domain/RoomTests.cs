@@ -18,15 +18,20 @@ public class RoomTests
 
         for (var i = 0; i < playerCount; i++)
         {
-            room.AddUser(new User
-            {
-                PlayerId = i == 0 ? "owner" : $"player-{i}",
-                ConnectionId = $"conn-{i}",
-                Username = $"Player {i}"
-            });
+            room.AddUser(CreateUser(i));
         }
 
         return room;
+    }
+
+    private static User CreateUser(int id)
+    {
+        return new User
+        {
+            PlayerId = id == 0 ? "owner" : $"player-{id}",
+            ConnectionId = $"conn-{id}",
+            Username = $"Player {id}"
+        };
     }
 
     private static Watcher NewWatcher(string watcherId) => new()
@@ -664,6 +669,45 @@ public class RoomTests
         catch (OperationCanceledException) { }
 
         Assert.True(true);
+    }
+
+    [Fact]
+    public async Task TryAddUser_ConcurrentAddsForTheLastSeat_OnlyOneSucceeds()
+    {
+        var room = CreateRoom(Room.MaxPlayersPerRoom - 1);
+        var user10 = CreateUser(10);
+        var user11 = CreateUser(11);
+
+        using var barrier = new Barrier(2);
+
+        var tasks = new[]
+        {
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.TryAddUser(user10);
+            }),
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.TryAddUser(user11);
+            })
+        };
+
+        var added = await Task.WhenAll(tasks);
+
+        Assert.Single(added, a => a);
+        Assert.Single(added, a => !a);
+        Assert.Equal(Room.MaxPlayersPerRoom, room.PlayerCount);
+    }
+
+    [Fact]
+    public void TryAddUser_WhenRoomIsFull_ReturnsFalseAndKeepsThePlayers()
+    {
+        var room = CreateRoom(Room.MaxPlayersPerRoom);
+
+        Assert.False(room.TryAddUser(CreateUser(Room.MaxPlayersPerRoom)));
+        Assert.Equal(Room.MaxPlayersPerRoom, room.PlayerCount);
     }
 
     #endregion
