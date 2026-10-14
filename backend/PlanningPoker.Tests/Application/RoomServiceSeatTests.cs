@@ -227,4 +227,109 @@ public class RoomServiceSeatTests
         Assert.Equal(RoomJoinError.RoomNotFound, service.TakeSeat("nonexistent-room", ownerConn).Error);
         Assert.Equal(RoomJoinError.RoomNotFound, service.LeaveSeat("nonexistent-room", ownerConn).Error);
     }
+
+    [Fact]
+    public async Task TakeSeat_ConcurrentJoinsForTheLastSeat_OnlyOneSucceeds()
+    {
+        for (var round = 0; round < 200; round++)
+            await RaceForTheLastSeat(contenders: 8);
+    }
+
+    private static async Task RaceForTheLastSeat(int contenders)
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+
+        for (var i = 1; i < Room.MaxPlayersPerRoom - 1; i++)
+            Assert.NotNull(service.EnterRoom(roomId, $"P{i}", $"conn-{i}").Joined);
+
+        for (var i = 0; i < contenders; i++)
+            Assert.NotNull(service.WatchRoom(roomId, $"W{i}", $"conn-c{i}").Joined);
+
+        using var barrier = new Barrier(contenders);
+
+        var attempts = Enumerable.Range(0, contenders).Select(i =>
+            Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait();
+                EnterRoomOutcome? outcome = null;
+                var error = Record.Exception(() => outcome = service.TakeSeat(roomId, $"conn-c{i}"));
+                return (outcome, error);
+            }, TaskCreationOptions.LongRunning));
+
+        var results = await Task.WhenAll(attempts);
+
+        Assert.All(results, r => Assert.Null(r.error));
+        Assert.Single(results, r => r.outcome!.Joined is not null);
+        Assert.Equal(contenders - 1, results.Count(r => r.outcome!.Error == RoomJoinError.RoomFull));
+        Assert.Equal(Room.MaxPlayersPerRoom, service.GetRoomSettings(ownerConn)!.Players.Count);
+    }
+
+    [Fact]
+    public async Task LeaveSeat_ConcurrentForTheLastWatcherSpot_OnlyOneSucceeds()
+    {
+        for (var round = 0; round < 200; round++)
+            await RaceForTheLastWatcherSpot(contenders: 8);
+    }
+
+    private static async Task RaceForTheLastWatcherSpot(int contenders)
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+
+        for (var i = 0; i < contenders; i++)
+            Assert.NotNull(service.EnterRoom(roomId, $"P{i}", $"conn-p{i}").Joined);
+
+        for (var i = 0; i < Room.MaxWatchersPerRoom - 1; i++)
+            Watch(service, roomId, $"W{i}", $"conn-w{i}");
+
+        using var barrier = new Barrier(contenders);
+
+        var attempts = Enumerable.Range(0, contenders).Select(i =>
+            Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait();
+                WatchRoomOutcome? outcome = null;
+                var error = Record.Exception(() => outcome = service.LeaveSeat(roomId, $"conn-p{i}"));
+                return (outcome, error);
+            }, TaskCreationOptions.LongRunning));
+
+        var results = await Task.WhenAll(attempts);
+
+        Assert.All(results, r => Assert.Null(r.error));
+        Assert.Single(results, r => r.outcome!.Joined is not null);
+        Assert.Equal(contenders - 1, results.Count(r => r.outcome!.Error == RoomJoinError.RoomFull));
+        Assert.Equal(Room.MaxWatchersPerRoom, service.GetRoomSettings(ownerConn)!.Watchers.Count);
+    }
+
+    [Fact]
+    public async Task WatchRoom_ConcurrentForTheLastWatcherSpot_OnlyOneSucceeds()
+    {
+        for (var round = 0; round < 200; round++)
+            await RaceToWatch(contenders: 8);
+    }
+
+    private static async Task RaceToWatch(int contenders)
+    {
+        var (service, roomId, _, ownerConn) = Setup();
+
+        for (var i = 0; i < Room.MaxWatchersPerRoom - 1; i++)
+            Watch(service, roomId, $"W{i}", $"conn-w{i}");
+
+        using var barrier = new Barrier(contenders);
+
+        var attempts = Enumerable.Range(0, contenders).Select(i =>
+            Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait();
+                WatchRoomOutcome? outcome = null;
+                var error = Record.Exception(() => outcome = service.WatchRoom(roomId, $"C{i}", $"conn-c{i}"));
+                return (outcome, error);
+            }, TaskCreationOptions.LongRunning));
+
+        var results = await Task.WhenAll(attempts);
+
+        Assert.All(results, r => Assert.Null(r.error));
+        Assert.Single(results, r => r.outcome!.Joined is not null);
+        Assert.Equal(contenders - 1, results.Count(r => r.outcome!.Error == RoomJoinError.RoomFull));
+        Assert.Equal(Room.MaxWatchersPerRoom, service.GetRoomSettings(ownerConn)!.Watchers.Count);
+    }
 }

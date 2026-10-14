@@ -112,15 +112,12 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (room is null)
             return WatchRoomOutcome.Failed(RoomJoinError.RoomNotFound);
 
-        if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
-            return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);
-
         if (repository.HasConnection(connectionId))
             return WatchRoomOutcome.Failed(RoomJoinError.AlreadyInRoom);
 
         var watcherId = Guid.NewGuid().ToString();
         var (accents, characters) = room.UsedLooks();
-        room.AddWatcher(new Watcher
+        var added = room.TryAddWatcher(new Watcher
         {
             WatcherId = watcherId,
             ConnectionId = connectionId,
@@ -128,6 +125,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             Accent = NextAccent(accents),
             Character = NextCharacter(characters),
         });
+        if (!added)
+            return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);
+
         repository.MapConnection(connectionId, roomId);
 
         return WatchRoomOutcome.Success(new WatchRoomResult(roomId, watcherId, room.ToSnapshot()));
@@ -143,13 +143,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (watcher is null)
             return EnterRoomOutcome.Failed(RoomJoinError.NotInRoom);
 
-        if (room.Phase == RoomPhase.Revealed)
-            return EnterRoomOutcome.Failed(RoomJoinError.RoundRevealed);
-
-        if (room.PlayerCount >= Room.MaxPlayersPerRoom)
-            return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
-
-        room.TakeSeat(watcher.WatcherId);
+        var change = room.TakeSeat(watcher.WatcherId);
+        if (change != SeatChange.Done)
+            return EnterRoomOutcome.Failed(ToJoinError(change));
 
         return EnterRoomOutcome.Success(new EnterRoomResult(roomId, watcher.WatcherId, room.ToSnapshot()));
     }
@@ -164,17 +160,21 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         if (user is null)
             return WatchRoomOutcome.Failed(RoomJoinError.NotInRoom);
 
-        if (room.Phase == RoomPhase.Revealed)
-            return WatchRoomOutcome.Failed(RoomJoinError.RoundRevealed);
-
-        if (room.Watchers.Count >= Room.MaxWatchersPerRoom)
-            return WatchRoomOutcome.Failed(RoomJoinError.RoomFull);
-
         var (accents, characters) = room.UsedLooks();
-        room.LeaveSeat(user.PlayerId, NextAccent(accents), NextCharacter(characters));
+        var change = room.LeaveSeat(user.PlayerId, NextAccent(accents), NextCharacter(characters));
+        if (change != SeatChange.Done)
+            return WatchRoomOutcome.Failed(ToJoinError(change));
 
         return WatchRoomOutcome.Success(new WatchRoomResult(roomId, user.PlayerId, room.ToSnapshot()));
     }
+
+    private static RoomJoinError ToJoinError(SeatChange change) => change switch
+    {
+        SeatChange.ParticipantNotFound => RoomJoinError.NotInRoom,
+        SeatChange.NoRoom => RoomJoinError.RoomFull,
+        SeatChange.RoundRevealed => RoomJoinError.RoundRevealed,
+        _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
+    };
 
     public RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId)
     {

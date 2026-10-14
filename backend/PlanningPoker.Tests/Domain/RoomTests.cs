@@ -710,5 +710,122 @@ public class RoomTests
         Assert.Equal(Room.MaxPlayersPerRoom, room.PlayerCount);
     }
 
+    [Fact]
+    public async Task TakeSeat_ConcurrentForTheLastSeat_OnlyOneSucceeds()
+    {
+        var room = CreateRoom(Room.MaxPlayersPerRoom - 1);
+        room.AddWatcher(NewWatcher("watcher-1"));
+        room.AddWatcher(NewWatcher("watcher-2"));
+
+        using var barrier = new Barrier(2);
+
+        var tasks = new[]
+        {
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.TakeSeat("watcher-1");
+            }),
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.TakeSeat("watcher-2");
+            })
+        };
+
+        var changes = await Task.WhenAll(tasks);
+
+        Assert.Single(changes, c => c == SeatChange.Done);
+        Assert.Single(changes, c => c == SeatChange.NoRoom);
+        Assert.Equal(1, room.WatcherCount);
+        Assert.Equal(Room.MaxPlayersPerRoom, room.PlayerCount);
+    }
+
+    [Fact]
+    public void TakeSeat_UnknownParticipant_ReturnsNotFoundAndChangesNothing()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+
+        Assert.Equal(SeatChange.ParticipantNotFound, room.TakeSeat("ghost"));
+        Assert.Equal(2, room.PlayerCount);
+        Assert.Equal(1, room.WatcherCount);
+    }
+
+    [Fact]
+    public void TakeSeat_WhileTheRoundIsRevealed_ReturnsRoundRevealedAndChangesNothing()
+    {
+        var room = CreateRoom();
+        room.AddWatcher(NewWatcher("watcher-1"));
+        room.Reveal();
+
+        Assert.Equal(SeatChange.RoundRevealed, room.TakeSeat("watcher-1"));
+        Assert.Equal(2, room.PlayerCount);
+        Assert.Equal(1, room.WatcherCount);
+    }
+
+    [Fact]
+    public async Task LeaveSeat_ConcurrentForTheLastWatcherSpot_OnlyOneSucceeds()
+    {
+        var room = CreateRoom(2);
+        for (var i = 0; i < Room.MaxWatchersPerRoom - 1; i++)
+            room.AddWatcher(NewWatcher($"watcher-{i}"));
+
+        using var barrier = new Barrier(2);
+
+        var tasks = new[]
+        {
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.LeaveSeat("owner", "#f472b6", 0);
+            }),
+            Task.Run(() =>
+            {
+                barrier.SignalAndWait();
+                return room.LeaveSeat("player-1", "#f472b6", 1);
+            })
+        };
+
+        var changes = await Task.WhenAll(tasks);
+
+        Assert.Single(changes, c => c == SeatChange.Done);
+        Assert.Single(changes, c => c == SeatChange.NoRoom);
+        Assert.Equal(1, room.PlayerCount);
+        Assert.Equal(Room.MaxWatchersPerRoom, room.WatcherCount);
+    }
+
+    [Fact]
+    public void LeaveSeat_UnknownParticipant_ReturnsNotFoundAndChangesNothing()
+    {
+        var room = CreateRoom();
+
+        Assert.Equal(SeatChange.ParticipantNotFound, room.LeaveSeat("ghost", "#f472b6", 0));
+        Assert.Equal(2, room.PlayerCount);
+        Assert.Equal(0, room.WatcherCount);
+    }
+
+    [Fact]
+    public void LeaveSeat_WhileTheRoundIsRevealed_ReturnsRoundRevealedAndChangesNothing()
+    {
+        var room = CreateRoom();
+        room.Reveal();
+
+        Assert.Equal(SeatChange.RoundRevealed, room.LeaveSeat("player-1", "#f472b6", 0));
+        Assert.Equal(2, room.PlayerCount);
+        Assert.Equal(0, room.WatcherCount);
+    }
+
+    [Fact]
+    public void TryAddWatcher_WhenTheBenchIsFull_ReturnsFalseAndKeepsTheWatchers()
+    {
+        var room = CreateRoom();
+        for (var i = 0; i < Room.MaxWatchersPerRoom; i++)
+            room.AddWatcher(NewWatcher($"watcher-{i}"));
+
+        Assert.False(room.TryAddWatcher(NewWatcher("late")));
+        Assert.Equal(Room.MaxWatchersPerRoom, room.WatcherCount);
+    }
+
     #endregion
 }

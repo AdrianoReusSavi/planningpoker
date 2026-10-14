@@ -156,12 +156,19 @@ public class Room
 
     public void AddWatcher(Watcher watcher)
     {
+        if (!TryAddWatcher(watcher))
+            throw new InvalidOperationException("Room has too many watchers.");
+    }
+
+    public bool TryAddWatcher(Watcher watcher)
+    {
         _lock.EnterWriteLock();
         try
         {
             if (Watchers.Count >= MaxWatchersPerRoom)
-                throw new InvalidOperationException("Room has too many watchers.");
+                return false;
             Watchers.Add(watcher);
+            return true;
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -180,15 +187,18 @@ public class Room
         finally { _lock.ExitWriteLock(); }
     }
 
-    public void TakeSeat(string participantId)
+    public SeatChange TakeSeat(string participantId)
     {
         _lock.EnterWriteLock();
         try
         {
-            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == participantId)
-                ?? throw new InvalidOperationException("Watcher not found in room.");
+            var watcher = Watchers.FirstOrDefault(w => w.WatcherId == participantId);
+            if (watcher is null)
+                return SeatChange.ParticipantNotFound;
+            if (Phase == RoomPhase.Revealed)
+                return SeatChange.RoundRevealed;
             if (Users.Count >= MaxPlayersPerRoom)
-                throw new InvalidOperationException("Room is full.");
+                return SeatChange.NoRoom;
 
             Watchers.Remove(watcher);
             Users.Add(new User
@@ -198,19 +208,24 @@ public class Room
                 Username = watcher.Username,
                 Connected = watcher.Connected
             });
+
+            return SeatChange.Done;
         }
         finally { _lock.ExitWriteLock(); }
     }
 
-    public void LeaveSeat(string participantId, string accent, int character)
+    public SeatChange LeaveSeat(string participantId, string accent, int character)
     {
         _lock.EnterWriteLock();
         try
         {
-            var user = Users.FirstOrDefault(u => u.PlayerId == participantId)
-                ?? throw new InvalidOperationException("Player not found in room.");
+            var user = Users.FirstOrDefault(u => u.PlayerId == participantId);
+            if (user is null)
+                return SeatChange.ParticipantNotFound;
+            if (Phase == RoomPhase.Revealed)
+                return SeatChange.RoundRevealed;
             if (Watchers.Count >= MaxWatchersPerRoom)
-                throw new InvalidOperationException("Room has too many watchers.");
+                return SeatChange.NoRoom;
 
             Users.Remove(user);
             Watchers.Add(new Watcher
@@ -222,6 +237,8 @@ public class Room
                 Accent = accent,
                 Character = character
             });
+
+            return SeatChange.Done;
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -407,6 +424,16 @@ public class Room
         {
             _lock.EnterReadLock();
             try { return Users.Count; }
+            finally { _lock.ExitReadLock(); }
+        }
+    }
+
+    public int WatcherCount
+    {
+        get
+        {
+            _lock.EnterReadLock();
+            try { return Watchers.Count; }
             finally { _lock.ExitReadLock(); }
         }
     }
