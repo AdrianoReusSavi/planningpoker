@@ -17,7 +17,7 @@ const DEFAULT_SECOND_COLOR = '#f472b6'
 const DEFAULT_ANGLE = 135
 const DEFAULT_PATTERN_COLOR = '#ffffff'
 
-type PatternKey = 'stripes' | 'dots' | 'grid' | 'waves' | 'zigzag' | 'none'
+type PatternKey = 'stripes' | 'dots' | 'grid' | 'waves' | 'zigzag' | 'stars' | 'none'
 type ColorFieldKey = 'primary' | 'secondary' | 'pattern'
 
 const PATTERNS: { key: PatternKey; labelKey: TranslationKey }[] = [
@@ -26,6 +26,7 @@ const PATTERNS: { key: PatternKey; labelKey: TranslationKey }[] = [
   { key: 'grid', labelKey: 'pattern.grid' },
   { key: 'waves', labelKey: 'pattern.waves' },
   { key: 'zigzag', labelKey: 'pattern.zigzag' },
+  { key: 'stars', labelKey: 'pattern.stars' },
   { key: 'none', labelKey: 'pattern.none' },
 ]
 

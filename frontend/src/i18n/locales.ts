@@ -143,6 +143,7 @@ const locales = {
     'pattern.grid': 'Grade',
     'pattern.waves': 'Ondas',
     'pattern.zigzag': 'Zigue-zague',
+    'pattern.stars': 'Estrelas',
     'pattern.none': 'Nenhum',
 
     // History
@@ -305,6 +306,7 @@ const locales = {
     'pattern.grid': 'Grid',
     'pattern.waves': 'Waves',
     'pattern.zigzag': 'Zigzag',
+    'pattern.stars': 'Stars',
     'pattern.none': 'None',
 
     'history.title': 'Round history',
@@ -463,6 +465,7 @@ const locales = {
     'pattern.grid': 'Cuadrícula',
     'pattern.waves': 'Ondas',
     'pattern.zigzag': 'Zigzag',
+    'pattern.stars': 'Estrellas',
     'pattern.none': 'Ninguno',
 
     'history.title': 'Historial de rondas',
