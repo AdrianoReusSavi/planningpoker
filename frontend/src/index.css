@@ -807,6 +807,13 @@ body.has-room-sidebar .room-banners {
   -webkit-mask-size: 16px 8px;
 }
 
+.card-front.pattern-stars::before {
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' fill='black'/><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' transform='translate(8 8)' fill='black'/></svg>");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' fill='black'/><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' transform='translate(8 8)' fill='black'/></svg>");
+  mask-size: 24px 24px;
+  -webkit-mask-size: 24px 24px;
+}
+
 .card-check {
   color: rgba(255, 255, 255, 0.95);
   font-size: 26px;
@@ -2124,6 +2131,13 @@ body.has-room-sidebar .toast-container {
   -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='8'><path d='M0,6 L4,2 L8,6 L12,2 L16,6' stroke='black' stroke-width='1.2' fill='none'/></svg>");
   mask-size: 16px 8px;
   -webkit-mask-size: 16px 8px;
+}
+
+.style-editor .style-pattern-swatch.pattern-stars::before {
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' fill='black'/><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' transform='translate(8 8)' fill='black'/></svg>");
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' fill='black'/><polygon points='4,1 4.71,3.03 6.85,3.07 5.14,4.37 5.76,6.43 4,5.2 2.24,6.43 2.86,4.37 1.15,3.07 3.29,3.03' transform='translate(8 8)' fill='black'/></svg>");
+  mask-size: 16px 16px;
+  -webkit-mask-size: 16px 16px;
 }
 
 .style-editor .modal-actions {

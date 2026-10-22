@@ -30,6 +30,7 @@ const PATTERN_CLASSES: Record<string, string> = {
   grid: 'pattern-grid',
   waves: 'pattern-waves',
   zigzag: 'pattern-zigzag',
+  stars: 'pattern-stars',
   none: 'pattern-none',
 }
 

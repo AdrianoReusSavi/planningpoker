@@ -21,7 +21,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
     private static readonly HashSet<string> AllowedPatterns = new(StringComparer.Ordinal)
     {
-        "stripes", "dots", "grid", "waves", "zigzag", "none"
+        "stripes", "dots", "grid", "waves", "zigzag", "stars", "none"
     };
 
     [GeneratedRegex(@"^#[0-9a-fA-F]{6}$")]
