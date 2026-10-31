@@ -1,13 +1,18 @@
 import { useI18n } from '../contexts/I18nContext'
-import type { RoundRecord } from '../types/room'
+import { formatHours, hoursOf, meanOf } from '../utils/hours'
+import { roleKey } from './RoleSelect'
+import type { PlayerRole, RoundRecord } from '../types/room'
+
+const HOUR_ROLES: PlayerRole[] = ['Dev', 'Qa']
 
 interface RoundHistoryProps {
   open: boolean
   onClose: () => void
   history: RoundRecord[]
+  hoursEnabled: boolean
 }
 
-export default function RoundHistory({ open, onClose, history }: RoundHistoryProps) {
+export default function RoundHistory({ open, onClose, history, hoursEnabled }: RoundHistoryProps) {
   const { t } = useI18n()
 
   if (!open) return null
@@ -33,20 +38,33 @@ export default function RoundHistory({ open, onClose, history }: RoundHistoryPro
                 <div key={round.round} className="round-card">
                   <div className="round-card-header">
                     <strong>{t('history.round')} {round.round}</strong>
-                    {mean && <span className="round-mean">{t('history.mean')}: {mean}</span>}
+                    <div className="round-means">
+                      {mean && <span className="round-mean">{t('history.mean')}: {mean}</span>}
+                      {hoursEnabled && HOUR_ROLES.map(role => (
+                        <span key={role} className="round-mean">
+                          {t(roleKey(role))}: {formatHours(meanOf(hoursOf(round.votes, role)))}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <table className="round-table">
                     <thead>
                       <tr>
                         <th>{t('history.player')}</th>
+                        {hoursEnabled && <th>{t('history.role')}</th>}
                         <th>{t('history.vote')}</th>
+                        {hoursEnabled && <th>{t('history.hours')}</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {round.votes.map(v => (
                         <tr key={v.playerId}>
                           <td>{v.name}</td>
+                          {hoursEnabled && <td>{t(roleKey(v.role))}</td>}
                           <td className="round-vote-cell">{v.vote}</td>
+                          {hoursEnabled && (
+                            <td className="round-vote-cell">{v.role === 'None' ? '' : formatHours(v.hours)}</td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

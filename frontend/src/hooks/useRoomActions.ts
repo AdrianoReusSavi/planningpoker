@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { HubConnection } from '@microsoft/signalr'
-import type { JoinRoomResponse } from '../types/room'
+import type { JoinRoomResponse, PlayerRole, RoomPreview } from '../types/room'
 
 export function useRoomActions(connection: HubConnection | null, connected: boolean) {
   const invoke = useCallback(async <T>(method: string, ...args: unknown[]): Promise<T | null> => {
@@ -9,20 +9,20 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
   }, [connection, connected])
 
   const createRoom = useCallback(
-    (name: string, roomName: string, votingDeck: number, asWatcher: boolean) =>
-      invoke<JoinRoomResponse>('CreateRoom', name, roomName, votingDeck, asWatcher),
+    (name: string, roomName: string, votingDeck: number, asWatcher: boolean, hoursEnabled: boolean, role: PlayerRole) =>
+      invoke<JoinRoomResponse>('CreateRoom', name, roomName, votingDeck, asWatcher, hoursEnabled, role),
     [invoke],
   )
 
   const enterRoom = useCallback(
-    (roomId: string, name: string) =>
-      invoke<JoinRoomResponse>('EnterRoom', roomId, name),
+    (roomId: string, name: string, role: PlayerRole) =>
+      invoke<JoinRoomResponse>('EnterRoom', roomId, name, role),
     [invoke],
   )
 
   const watchRoom = useCallback(
-    (roomId: string, name: string) =>
-      invoke<JoinRoomResponse>('WatchRoom', roomId, name),
+    (roomId: string, name: string, role: PlayerRole) =>
+      invoke<JoinRoomResponse>('WatchRoom', roomId, name, role),
     [invoke],
   )
 
@@ -44,9 +44,9 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     [invoke],
   )
 
-  const getRoomName = useCallback(
+  const getRoomPreview = useCallback(
     (roomId: string) =>
-      invoke<string>('GetRoomName', roomId),
+      invoke<RoomPreview>('GetRoomPreview', roomId),
     [invoke],
   )
 
@@ -59,6 +59,12 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
   const submitVote = useCallback(
     (roomId: string, vote: string) =>
       invoke<void>('SubmitVote', roomId, vote),
+    [invoke],
+  )
+
+  const submitHours = useCallback(
+    (roomId: string, hours: number | null) =>
+      invoke<void>('SubmitHours', roomId, hours),
     [invoke],
   )
 
@@ -133,12 +139,13 @@ export function useRoomActions(connection: HubConnection | null, connected: bool
     createRoom,
     enterRoom,
     watchRoom,
-    getRoomName,
+    getRoomPreview,
     takeSeat,
     leaveSeat,
     updateWatcherAppearance,
     reconnect,
     submitVote,
+    submitHours,
     clearVote,
     setAutoReveal,
     revealVotes,

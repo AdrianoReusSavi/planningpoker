@@ -14,12 +14,13 @@ import FlipCard from '../components/FlipCard'
 export default function Home() {
   const { snapshot } = useRoom()
   const { connection, connected } = useConnection()
-  const { getRoomName } = useRoomActions(connection, connected)
+  const { getRoomPreview } = useRoomActions(connection, connected)
   const { isDark, toggle } = useTheme()
   const { t } = useI18n()
   const [roomId, setRoomId] = useState('')
   const [roomName, setRoomName] = useState<string | null>(null)
   const [roomMissing, setRoomMissing] = useState(false)
+  const [hoursEnabled, setHoursEnabled] = useState(false)
 
   useEffect(() => {
     const param = new URLSearchParams(window.location.search).get('roomId')
@@ -36,20 +37,22 @@ export default function Home() {
     if (!connected || !roomId || snapshot) return
 
     let current = true
-    getRoomName(roomId)
-      .then((name) => {
+    getRoomPreview(roomId)
+      .then((preview) => {
         if (!current) return
-        setRoomName(name)
-        setRoomMissing(name === null)
+        setRoomName(preview?.name ?? null)
+        setHoursEnabled(preview?.hoursEnabled ?? false)
+        setRoomMissing(preview === null)
       })
       .catch(() => { /**/ })
 
     return () => { current = false }
-  }, [connected, roomId, snapshot, getRoomName])
+  }, [connected, roomId, snapshot, getRoomPreview])
 
   const goToCreate = () => {
     setRoomId('')
     setRoomName(null)
+    setHoursEnabled(false)
     setRoomMissing(false)
     window.history.replaceState({}, '', window.location.pathname)
   }
@@ -82,6 +85,7 @@ export default function Home() {
                 roomId={roomId}
                 roomName={roomName}
                 roomMissing={roomMissing}
+                hoursEnabled={hoursEnabled}
                 onGoToCreate={goToCreate}
               />
             ) : (

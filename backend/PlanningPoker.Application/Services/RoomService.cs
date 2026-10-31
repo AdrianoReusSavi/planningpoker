@@ -32,9 +32,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
 
     // ── Room lifecycle ──
 
-    public CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId)
+    public CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId, bool hoursEnabled = false, PlayerRole role = PlayerRole.None)
     {
-        if (!ValidateName(name) || !ValidateRoomName(roomName) || !Enum.IsDefined(votingDeck))
+        if (!ValidateName(name) || !ValidateRoomName(roomName) || !Enum.IsDefined(votingDeck) || !Enum.IsDefined(role))
             return CreateRoomOutcome.Failed(RoomJoinError.InvalidName);
 
         if (repository.HasConnection(connectionId))
@@ -47,7 +47,8 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             RoomId = roomId,
             RoomName = roomName.Trim(),
             OwnerId = participantId,
-            VotingDeck = votingDeck
+            VotingDeck = votingDeck,
+            HoursEnabled = hoursEnabled
         };
         room.StartVoting();
 
@@ -62,13 +63,14 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
                 WatcherId = participantId,
                 ConnectionId = connectionId,
                 Username = name.Trim(),
+                Role = role,
                 Accent = NextAccent(accents),
                 Character = NextCharacter(characters),
             });
         }
         else
         {
-            room.AddUser(new User { PlayerId = participantId, ConnectionId = connectionId, Username = name.Trim() });
+            room.AddUser(new User { PlayerId = participantId, ConnectionId = connectionId, Username = name.Trim(), Role = role });
         }
 
         repository.MapConnection(connectionId, roomId);
@@ -76,9 +78,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return CreateRoomOutcome.Success(new CreateRoomResult(roomId, participantId, room.ToSnapshot()));
     }
 
-    public EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId)
+    public EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId, PlayerRole role = PlayerRole.None)
     {
-        if (!ValidateName(name))
+        if (!ValidateName(name) || !Enum.IsDefined(role))
             return EnterRoomOutcome.Failed(RoomJoinError.InvalidName);
 
         if (string.IsNullOrWhiteSpace(roomId))
@@ -92,7 +94,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             return EnterRoomOutcome.Failed(RoomJoinError.AlreadyInRoom);
 
         var playerId = Guid.NewGuid().ToString();
-        if (!room.TryAddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim() }))
+        if (!room.TryAddUser(new User { PlayerId = playerId, ConnectionId = connectionId, Username = name.Trim(), Role = role }))
             return EnterRoomOutcome.Failed(RoomJoinError.RoomFull);
 
         repository.MapConnection(connectionId, roomId);
@@ -100,9 +102,9 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return EnterRoomOutcome.Success(new EnterRoomResult(roomId, playerId, room.ToSnapshot()));
     }
 
-    public WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId)
+    public WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId, PlayerRole role = PlayerRole.None)
     {
-        if (!ValidateName(name))
+        if (!ValidateName(name) || !Enum.IsDefined(role))
             return WatchRoomOutcome.Failed(RoomJoinError.InvalidName);
 
         if (string.IsNullOrWhiteSpace(roomId))
@@ -122,6 +124,7 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             WatcherId = watcherId,
             ConnectionId = connectionId,
             Username = name.Trim(),
+            Role = role,
             Accent = NextAccent(accents),
             Character = NextCharacter(characters),
         });
@@ -244,8 +247,8 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
         return new ReconnectResult(roomId, oldConnectionId, room.ToSnapshot());
     }
 
-    public string? GetRoomName(string roomId)
-        => repository.GetRoom(roomId)?.RoomName;
+    public RoomPreview? GetRoomPreview(string roomId)
+        => repository.GetRoom(roomId) is { } room ? new RoomPreview(room.RoomName, room.HoursEnabled) : null;
 
     public RoomSnapshot? GetRoomSettings(string connectionId)
     {
@@ -300,6 +303,27 @@ public partial class RoomService(IRoomRepository repository) : IRoomService
             return room.ToSnapshot();
         }
         catch (InvalidOperationException) { return null; }
+    }
+
+    public RoomSnapshot? SubmitHours(string roomId, decimal? hours, string connectionId)
+    {
+        if (string.IsNullOrWhiteSpace(roomId))
+            return null;
+
+        var room = repository.GetRoom(roomId);
+        if (room is null)
+            return null;
+
+        var user = room.FindByConnectionId(connectionId);
+        if (user is null)
+            return null;
+
+        try
+        {
+            room.SubmitHours(user.PlayerId, hours);
+            return room.ToSnapshot();
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException) { return null; }
     }
 
     public RoomSnapshot? SetAutoReveal(string roomId, bool enabled, string connectionId)

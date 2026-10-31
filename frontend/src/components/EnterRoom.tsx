@@ -3,9 +3,11 @@ import { useConnection } from '../contexts/ConnectionContext'
 import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useUsername } from '../hooks/useUsername'
+import { useRole } from '../hooks/useRole'
 import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { LoadingIcon } from './Icons'
+import RoleSelect from './RoleSelect'
 import type { RoomJoinError } from '../types/room'
 import type { TranslationKey } from '../i18n/locales'
 
@@ -23,25 +25,30 @@ interface EnterRoomProps {
   roomId: string
   roomName: string | null
   roomMissing: boolean
+  hoursEnabled: boolean
   onGoToCreate: () => void
 }
 
-export default function EnterRoom({ roomId, roomName, roomMissing, onGoToCreate }: EnterRoomProps) {
+export default function EnterRoom({ roomId, roomName, roomMissing, hoursEnabled, onGoToCreate }: EnterRoomProps) {
   const { connection, connected } = useConnection()
   const { setPlayerId } = useRoom()
   const { enterRoom, watchRoom } = useRoomActions(connection, connected)
   const { showToast } = useToast()
   const { t } = useI18n()
   const [username, setUsername] = useUsername()
+  const [role, setRole] = useRole()
   const [loading, setLoading] = useState<'play' | 'watch' | null>(null)
 
+  const canJoin = username.trim() !== '' && roomId !== '' && !roomMissing && (!hoursEnabled || role !== null)
+
   const join = async (mode: 'play' | 'watch') => {
-    if (!username.trim() || !roomId) return
+    if (!canJoin) return
     setLoading(mode)
     try {
+      const joinRole = hoursEnabled ? role ?? 'None' : 'None'
       const result = mode === 'play'
-        ? await enterRoom(roomId, username.trim())
-        : await watchRoom(roomId, username.trim())
+        ? await enterRoom(roomId, username.trim(), joinRole)
+        : await watchRoom(roomId, username.trim(), joinRole)
       if (result?.id) setPlayerId(result.id)
       else showToast(t(errorKey(mode, result?.error)), 'error')
     } catch {
@@ -64,17 +71,18 @@ export default function EnterRoom({ roomId, roomName, roomMissing, onGoToCreate 
         maxLength={50}
       />
       <input type="text" value={roomName ?? ''} disabled />
+      {hoursEnabled && <RoleSelect value={role} onChange={setRole} />}
       <div className="button-row">
         <button
           onClick={handleEnter}
-          disabled={!username.trim() || !roomId || !connected || roomMissing || loading !== null}
+          disabled={!canJoin || !connected || loading !== null}
         >
           {loading === 'play' && <LoadingIcon />} {loading === 'play' ? t('enter.loading') : t('enter.submit')}
         </button>
         <button
           className="watch"
           onClick={() => join('watch')}
-          disabled={!username.trim() || !roomId || !connected || roomMissing || loading !== null}
+          disabled={!canJoin || !connected || loading !== null}
           title={t('enter.watchHint')}
         >
           {loading === 'watch' && <LoadingIcon />} {loading === 'watch' ? t('enter.loading') : t('enter.watch')}
