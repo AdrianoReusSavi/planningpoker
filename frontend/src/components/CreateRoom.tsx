@@ -3,10 +3,12 @@ import { useConnection } from '../contexts/ConnectionContext'
 import { useRoom } from '../contexts/RoomContext'
 import { useRoomActions } from '../hooks/useRoomActions'
 import { useUsername } from '../hooks/useUsername'
+import { useRole } from '../hooks/useRole'
 import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { LoadingIcon } from './Icons'
 import DeckSelect from './DeckSelect'
+import RoleSelect from './RoleSelect'
 import type { RoomJoinError } from '../types/room'
 import type { TranslationKey } from '../i18n/locales'
 
@@ -22,13 +24,15 @@ export default function CreateRoom() {
   const [username, setUsername] = useUsername()
   const [roomName, setRoomName] = useState('')
   const [votingDeck, setVotingDeck] = useState(0)
+  const [hoursEnabled, setHoursEnabled] = useState(false)
+  const [role, setRole] = useRole()
   const [loading, setLoading] = useState<'play' | 'watch' | null>(null)
 
   const create = async (mode: 'play' | 'watch') => {
-    if (!username.trim() || !roomName.trim()) return
+    if (!canCreate) return
     setLoading(mode)
     try {
-      const result = await createRoom(username.trim(), roomName.trim(), votingDeck, mode === 'watch')
+      const result = await createRoom(username.trim(), roomName.trim(), votingDeck, mode === 'watch', hoursEnabled, role ?? 'None')
       if (result?.id) setPlayerId(result.id)
       else showToast(t(errorKey(result?.error)), 'error')
     } catch {
@@ -37,6 +41,8 @@ export default function CreateRoom() {
       setLoading(null)
     }
   }
+
+  const canCreate = username.trim() !== '' && roomName.trim() !== '' && (!hoursEnabled || role !== null)
 
   const handleCreate = () => create('play')
 
@@ -63,17 +69,26 @@ export default function CreateRoom() {
         maxLength={30}
       />
       <DeckSelect value={votingDeck} onChange={setVotingDeck} />
+      <label className="form-check" title={t('create.hoursHint')}>
+        <input
+          type="checkbox"
+          checked={hoursEnabled}
+          onChange={(e) => setHoursEnabled(e.target.checked)}
+        />
+        <span>{t('create.hours')}</span>
+      </label>
+      {hoursEnabled && <RoleSelect value={role} onChange={setRole} />}
       <div className="button-row">
         <button
           onClick={handleCreate}
-          disabled={!username.trim() || !roomName.trim() || !connected || loading !== null}
+          disabled={!canCreate || !connected || loading !== null}
         >
           {loading === 'play' && <LoadingIcon />} {loading === 'play' ? t('create.loading') : t('create.submit')}
         </button>
         <button
           className="watch"
           onClick={() => create('watch')}
-          disabled={!username.trim() || !roomName.trim() || !connected || loading !== null}
+          disabled={!canCreate || !connected || loading !== null}
           title={t('create.watchHint')}
         >
           {loading === 'watch' && <LoadingIcon />} {loading === 'watch' ? t('create.loading') : t('create.watch')}

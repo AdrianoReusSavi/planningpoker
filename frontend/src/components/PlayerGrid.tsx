@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import UserCard from './UserCard'
 import ThrowPopover from './ThrowPopover'
+import type { PlayerRole } from '../types/room'
 
 export interface PlayerView {
   id: string
@@ -11,6 +12,10 @@ export interface PlayerView {
   style: string | null
   pattern: string | null
   patternColor: string | null
+  role: PlayerRole
+  hasPoints: boolean
+  hasHours: boolean
+  hours: number | null
 }
 
 interface PlayerGridProps {
@@ -19,6 +24,7 @@ interface PlayerGridProps {
   currentPlayerId: string | null
   isLeader: boolean
   flipped: boolean
+  hoursEnabled: boolean
   onKick: (playerId: string) => void
   onTransfer: (playerId: string) => void
   onEditStyle: () => void
@@ -28,18 +34,20 @@ interface PlayerGridProps {
 const CIRCULAR_MIN_WIDTH = 520
 const DENSE_THRESHOLD = 8
 
-const FLIP_W_NORMAL = 72
-const FLIP_W_DENSE = 64
-const FLIP_H_NORMAL = 104
-const FLIP_H_DENSE = 92
-const NAME_GAP_PX = 20
-const NAME_W_BUFFER = 6
-const NAME_FS_MAX = 11
-const NAME_FS_MIN = 8
+const AVATAR_HEIGHT_RATIO = 0.085
+const AVATAR_WIDTH_RATIO = 0.05
+const AVATAR_MIN = 32
+const AVATAR_MAX = 60
+const AVATAR_DENSE_FACTOR = 0.82
+const AVATAR_REFERENCE = 44
 
-const SCALE_REFERENCE_HEIGHT = 800
-const SCALE_MIN = 0.55
-const SCALE_MAX = 1.1
+const NAME_GAP_PX = 30
+const NAME_W_BUFFER = 22
+
+const SEAT_TOP_OVERHANG = 12
+const SHORT_STAGE_RATIO = 0.6
+const NAME_FS_MAX = 13
+const NAME_FS_MIN = 10
 
 const CARD_GAP_PX = 48
 const CARD_GAP_MIN = 20
@@ -47,11 +55,13 @@ const ELLIPSE_B_MIN = 96
 const ELLIPSE_A_RATIO_CAP = 2.2
 const ELLIPSE_A_HORIZONTAL_PAD = 80
 const ELLIPSE_A_WIDTH_RATIO = 0.36
+const ELLIPSE_A_MAX = 540
+const ELLIPSE_B_MAX = 270
 
 const POPOVER_Z_INDEX = 50
 
 export default function PlayerGrid({
-  players, ownerId, currentPlayerId, isLeader, flipped,
+  players, ownerId, currentPlayerId, isLeader, flipped, hoursEnabled,
   onKick, onTransfer, onEditStyle, onThrow,
 }: PlayerGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -78,29 +88,32 @@ export default function PlayerGrid({
     return [players[selfIdx], ...players.slice(0, selfIdx), ...players.slice(selfIdx + 1)]
   }, [players, currentPlayerId])
 
-  const useCircular = orderedPlayers.length > 0 && size.width >= CIRCULAR_MIN_WIDTH
+  const canCircle = orderedPlayers.length > 0 && size.width >= CIRCULAR_MIN_WIDTH
   const isDense = orderedPlayers.length > DENSE_THRESHOLD
   const densityClass = isDense ? 'dense' : ''
   const hasSelf = currentPlayerId !== null && orderedPlayers[0]?.id === currentPlayerId
 
   const layout = useMemo(() => {
-    if (!useCircular) return null
+    if (!canCircle) return null
     const total = orderedPlayers.length
-    const baseFlipW = isDense ? FLIP_W_DENSE : FLIP_W_NORMAL
-    const baseFlipH = isDense ? FLIP_H_DENSE : FLIP_H_NORMAL
-    const heightFactor = Math.max(SCALE_MIN, Math.min(size.height / SCALE_REFERENCE_HEIGHT, SCALE_MAX))
-    const flipW = baseFlipW * heightFactor
-    const flipH = baseFlipH * heightFactor
-    const nameFs = Math.max(NAME_FS_MIN, Math.min(NAME_FS_MAX * heightFactor, NAME_FS_MAX))
+    const fitted = Math.min(size.height * AVATAR_HEIGHT_RATIO, size.width * AVATAR_WIDTH_RATIO)
+    const flipW = Math.max(AVATAR_MIN, Math.min(fitted, AVATAR_MAX)) * (isDense ? AVATAR_DENSE_FACTOR : 1)
+    const flipH = flipW
+    const scale = flipW / AVATAR_REFERENCE
+    const nameFs = Math.max(NAME_FS_MIN, Math.min(NAME_FS_MAX * scale, NAME_FS_MAX))
     const cardW = flipW + NAME_W_BUFFER
     const cardH = flipH + NAME_GAP_PX
-    const gap = Math.max(CARD_GAP_MIN, CARD_GAP_PX * heightFactor)
+    const gap = Math.max(CARD_GAP_MIN, CARD_GAP_PX * scale)
     const angularStep = 2 * Math.sin(Math.PI / Math.max(total, 2))
     const minB = (cardH + gap) / angularStep
     const minA = (cardW + gap) / angularStep
-    const rawA = Math.max(140, Math.min(size.width / 2 - cardW - ELLIPSE_A_HORIZONTAL_PAD, size.width * ELLIPSE_A_WIDTH_RATIO))
-    const b = Math.max(ELLIPSE_B_MIN, minB, size.height / 2 - cardH)
-    const a = Math.min(Math.max(rawA, minA), b * ELLIPSE_A_RATIO_CAP)
+    const rawA = Math.max(140, Math.min(size.width / 2 - cardW - ELLIPSE_A_HORIZONTAL_PAD, size.width * ELLIPSE_A_WIDTH_RATIO, ELLIPSE_A_MAX))
+    const seatHalfH = flipW / 2 + nameFs * 1.5 + SEAT_TOP_OVERHANG
+    const maxB = Math.max(0, size.height / 2 - seatHalfH)
+    if (maxB < seatHalfH * SHORT_STAGE_RATIO) return null
+    const wantedB = Math.max(ELLIPSE_B_MIN, minB, Math.min(size.height / 2 - cardH, ELLIPSE_B_MAX))
+    const b = Math.min(wantedB, maxB)
+    const a = Math.min(Math.max(rawA, minA), wantedB * ELLIPSE_A_RATIO_CAP)
     const baseAngle = hasSelf ? Math.PI / 2 : -Math.PI / 2
     const angleStep = (hasSelf ? -1 : 1) * (2 * Math.PI) / total
     const positions = orderedPlayers.map((_, idx) => {
@@ -108,7 +121,9 @@ export default function PlayerGrid({
       return { x: Math.cos(angle) * a, y: Math.sin(angle) * b }
     })
     return { positions, a, b, flipW, flipH, nameFs }
-  }, [useCircular, orderedPlayers, size, isDense, hasSelf])
+  }, [canCircle, orderedPlayers, size, isDense, hasSelf])
+
+  const useCircular = layout !== null
 
   const groupClassName = [
     'user-group',
@@ -143,10 +158,14 @@ export default function PlayerGrid({
               <UserCard
                 playerId={user.id}
                 username={user.username}
-                hasVoted={user.hasVoted}
+                pointsDone={hoursEnabled ? user.hasPoints : user.hasVoted}
+                hoursDone={hoursEnabled && user.role !== 'None' ? user.hasHours : null}
+                revealed={flipped}
                 vote={user.vote}
                 connected={user.connected}
-                flipped={user.hasVoted && flipped}
+                flipped={flipped && user.vote !== ''}
+                role={hoursEnabled ? user.role : null}
+                hours={user.hours}
                 revealDelay={flipped ? idx * 150 : 0}
                 style={user.style}
                 pattern={user.pattern}

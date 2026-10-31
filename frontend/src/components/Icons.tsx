@@ -121,6 +121,58 @@ export function CoffeeIcon() {
   )
 }
 
+export function CardIcon({ size: s = 10 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" aria-hidden="true">
+      <rect className="card-a" x="2.5" y="7" width="11" height="15" rx="2" />
+      <rect className="card-b" x="11" y="4" width="11" height="15" rx="2" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function HourglassIcon({ size: s = 9 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="6" y1="2" x2="18" y2="2" />
+      <line x1="6" y1="22" x2="18" y2="22" />
+      <path d="M17 2v4l-5 6 5 6v4" />
+      <path d="M7 2v4l5 6-5 6v4" />
+    </svg>
+  )
+}
+
+export function CheckIcon({ size: s = 14 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="5 12.5 10 17.5 19 7" />
+    </svg>
+  )
+}
+
+export function PencilIcon({ size: s = 14 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    </svg>
+  )
+}
+
+export function ChevronUpIcon({ size: s = 12 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 15 12 9 18 15" />
+    </svg>
+  )
+}
+
+export function ChevronDownIcon({ size: s = 12 }: { size?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
 export function CloseIcon({ size: s = 10 }: { size?: number }) {
   return (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">

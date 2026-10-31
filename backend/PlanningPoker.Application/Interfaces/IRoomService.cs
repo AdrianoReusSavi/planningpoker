@@ -6,17 +6,18 @@ namespace PlanningPoker.Application.Interfaces;
 
 public interface IRoomService
 {
-    CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId);
-    EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId);
-    WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId);
+    CreateRoomOutcome CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, string connectionId, bool hoursEnabled = false, PlayerRole role = PlayerRole.None);
+    EnterRoomOutcome EnterRoom(string roomId, string name, string connectionId, PlayerRole role = PlayerRole.None);
+    WatchRoomOutcome WatchRoom(string roomId, string name, string connectionId, PlayerRole role = PlayerRole.None);
     EnterRoomOutcome TakeSeat(string roomId, string connectionId);
     WatchRoomOutcome LeaveSeat(string roomId, string connectionId);
     RoomSnapshot? UpdateWatcherAppearance(string roomId, string accent, int character, string connectionId);
     ReconnectResult? Reconnect(string roomId, string playerId, string connectionId);
-    string? GetRoomName(string roomId);
+    RoomPreview? GetRoomPreview(string roomId);
     RoomSnapshot? GetRoomSettings(string connectionId);
     RoomSnapshot? TransferOwnership(string roomId, string targetPlayerId, string connectionId);
     RoomSnapshot? SubmitVote(string roomId, string vote, string connectionId);
+    RoomSnapshot? SubmitHours(string roomId, decimal? hours, string connectionId);
     RoomSnapshot? SetAutoReveal(string roomId, bool enabled, string connectionId);
     RoomSnapshot? ClearVote(string roomId, string connectionId);
     RoomSnapshot? AutoReveal(string roomId);

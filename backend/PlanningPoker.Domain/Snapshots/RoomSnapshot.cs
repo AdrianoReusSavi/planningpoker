@@ -7,6 +7,7 @@ public record RoomSnapshot(
     string OwnerId,
     string RoomName,
     string VotingDeck,
+    bool HoursEnabled,
     string Phase,
     IReadOnlyList<PlayerSnapshot> Players,
     IReadOnlyList<WatcherSnapshot> Watchers,

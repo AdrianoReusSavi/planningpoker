@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using PlanningPoker.Api.Hubs;
 using PlanningPoker.Application.Interfaces;
 using PlanningPoker.Application.Services;
@@ -15,6 +16,9 @@ builder.Services.AddSignalR(options =>
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(150);
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+}).AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 var allowedOriginsString = builder.Configuration["Cors:AllowedOrigins"];

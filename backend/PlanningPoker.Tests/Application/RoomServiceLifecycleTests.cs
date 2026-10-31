@@ -103,20 +103,20 @@ public class RoomServiceLifecycleTests
     }
 
     [Fact]
-    public void GetRoomName_AnswersBeforeAnyoneJoins()
+    public void GetRoomPreview_AnswersBeforeAnyoneJoins()
     {
         var (service, _) = Setup();
         var created = service.CreateRoom("Owner", "Refinamento do time", EstimationOptions.Fibonacci, false, "conn-owner").Created;
 
-        Assert.Equal("Refinamento do time", service.GetRoomName(created!.RoomId));
+        Assert.Equal("Refinamento do time", service.GetRoomPreview(created!.RoomId)?.Name);
     }
 
     [Fact]
-    public void GetRoomName_OnAnUnknownRoom_ReturnsNull()
+    public void GetRoomPreview_OnAnUnknownRoom_ReturnsNull()
     {
         var (service, _) = Setup();
 
-        Assert.Null(service.GetRoomName("nonexistent-room"));
+        Assert.Null(service.GetRoomPreview("nonexistent-room"));
     }
 
     [Fact]

@@ -13,6 +13,24 @@ const locales = {
     'create.watch': 'Criar e assistir',
     'create.watchHint': 'Cria a sala e te deixa no banco. A mesa começa vazia.',
     'create.connectionError': 'Erro de conexão. Verifique sua internet.',
+    'create.hours': 'Estimar horas de Dev e QA',
+    'create.hoursHint': 'Cada pessoa informa as horas da sua função junto com os pontos',
+
+    // Role
+    'role.label': 'Sua função',
+    'role.Dev': 'Dev',
+    'role.Qa': 'QA',
+    'role.None': 'Outro',
+    'role.noneHint': 'Vota só nos pontos, sem horas',
+
+    // Hours
+    'hours.label': 'Horas de {role}',
+    'hours.placeholder': 'Horas',
+    'hours.invalid': 'Use de 0,5 a 999, em passos de 0,5',
+    'hours.confirm': 'Confirmar horas',
+    'hours.edit': 'Horas confirmadas. Clique para editar',
+    'hours.increase': 'Aumentar horas',
+    'hours.decrease': 'Diminuir horas',
 
     // EnterRoom
     'enter.name': 'Seu nome',
@@ -57,6 +75,8 @@ const locales = {
     'card.transferTo': 'Transferir liderança para {name}',
     'card.kick': 'Remover {name}',
     'card.ownerSuffix': '(líder)',
+    'card.partPoints': 'Pontos',
+    'card.partHours': 'Horas',
 
     // Room
     'room.invite': 'Convidar',
@@ -153,12 +173,15 @@ const locales = {
     'history.mean': 'Média',
     'history.player': 'Jogador',
     'history.vote': 'Voto',
+    'history.role': 'Função',
+    'history.hours': 'Horas',
 
     // Summary
     'summary.approxMean': 'Média aproximada',
     'summary.exactMean': 'Média exata',
     'summary.mostVoted': 'Mais votado',
     'summary.median': 'Valor central',
+    'summary.hours': 'Horas {role}',
 
     // MiniView
     'mini.waiting': 'Aguardando conexão com a sala principal...',
@@ -187,6 +210,24 @@ const locales = {
     'create.watch': 'Create and watch',
     'create.watchHint': 'Creates the room and puts you on the bench. The table starts empty.',
     'create.connectionError': 'Connection error. Check your internet.',
+    'create.hours': 'Estimate Dev and QA hours',
+    'create.hoursHint': 'Everyone enters the hours for their role along with the points',
+
+    // Role
+    'role.label': 'Your role',
+    'role.Dev': 'Dev',
+    'role.Qa': 'QA',
+    'role.None': 'Other',
+    'role.noneHint': 'Votes on points only, no hours',
+
+    // Hours
+    'hours.label': '{role} hours',
+    'hours.placeholder': 'Hours',
+    'hours.invalid': 'Use 0.5 to 999, in steps of 0.5',
+    'hours.confirm': 'Confirm hours',
+    'hours.edit': 'Hours confirmed. Click to edit',
+    'hours.increase': 'Increase hours',
+    'hours.decrease': 'Decrease hours',
 
     'enter.name': 'Your name',
     'enter.submit': 'Join',
@@ -228,6 +269,8 @@ const locales = {
     'card.transferTo': 'Transfer ownership to {name}',
     'card.kick': 'Remove {name}',
     'card.ownerSuffix': '(leader)',
+    'card.partPoints': 'Points',
+    'card.partHours': 'Hours',
 
     'room.invite': 'Invite',
     'room.leave': 'Leave',
@@ -315,11 +358,14 @@ const locales = {
     'history.mean': 'Mean',
     'history.player': 'Player',
     'history.vote': 'Vote',
+    'history.role': 'Role',
+    'history.hours': 'Hours',
 
     'summary.approxMean': 'Approximate mean',
     'summary.exactMean': 'Exact mean',
     'summary.mostVoted': 'Most voted',
     'summary.median': 'Median value',
+    'summary.hours': '{role} hours',
 
     'mini.waiting': 'Waiting for connection to the main room...',
     'mini.keepOpen': 'Keep the main tab open.',
@@ -346,6 +392,24 @@ const locales = {
     'create.watch': 'Crear y ver',
     'create.watchHint': 'Crea la sala y te deja en el banco. La mesa empieza vacía.',
     'create.connectionError': 'Error de conexión. Verifica tu internet.',
+    'create.hours': 'Estimar horas de Dev y QA',
+    'create.hoursHint': 'Cada persona indica las horas de su función junto con los puntos',
+
+    // Role
+    'role.label': 'Tu función',
+    'role.Dev': 'Dev',
+    'role.Qa': 'QA',
+    'role.None': 'Otro',
+    'role.noneHint': 'Vota solo los puntos, sin horas',
+
+    // Hours
+    'hours.label': 'Horas de {role}',
+    'hours.placeholder': 'Horas',
+    'hours.invalid': 'Usa de 0,5 a 999, en pasos de 0,5',
+    'hours.confirm': 'Confirmar horas',
+    'hours.edit': 'Horas confirmadas. Haz clic para editar',
+    'hours.increase': 'Aumentar horas',
+    'hours.decrease': 'Disminuir horas',
 
     'enter.name': 'Tu nombre',
     'enter.submit': 'Entrar',
@@ -387,6 +451,8 @@ const locales = {
     'card.transferTo': 'Transferir liderazgo a {name}',
     'card.kick': 'Remover a {name}',
     'card.ownerSuffix': '(líder)',
+    'card.partPoints': 'Puntos',
+    'card.partHours': 'Horas',
 
     'room.invite': 'Invitar',
     'room.leave': 'Salir',
@@ -474,11 +540,14 @@ const locales = {
     'history.mean': 'Media',
     'history.player': 'Jugador',
     'history.vote': 'Voto',
+    'history.role': 'Función',
+    'history.hours': 'Horas',
 
     'summary.approxMean': 'Media aproximada',
     'summary.exactMean': 'Media exacta',
     'summary.mostVoted': 'Más votado',
     'summary.median': 'Valor central',
+    'summary.hours': 'Horas {role}',
 
     'mini.waiting': 'Esperando conexión con la sala principal...',
     'mini.keepOpen': 'Mantén la pestaña principal abierta.',

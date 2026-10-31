@@ -31,7 +31,6 @@
 
   --card-default-bg: #818cf8;
 
-  --sidebar-w: 240px;
 }
 
 [data-theme="dark"] {
@@ -401,29 +400,6 @@ body {
   z-index: 20;
 }
 
-.room-banners {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  pointer-events: none;
-}
-
-body.has-room-sidebar .room-banners {
-  right: var(--sidebar-w);
-}
-
-@media (max-width: 768px) {
-  body.has-room-sidebar .room-banners {
-    right: 0;
-  }
-}
-
-.room-banners > * {
-  pointer-events: auto;
-}
 
 /* ── Header ── */
 
@@ -622,6 +598,8 @@ body.has-room-sidebar .room-banners {
 /* ── User Group ── */
 
 .user-group {
+  --card-flip-w: 44px;
+  --card-flip-h: 44px;
   flex: 1 1 0;
   min-height: 0;
   display: flex;
@@ -699,8 +677,8 @@ body.has-room-sidebar .room-banners {
 }
 
 .user-card-action.kick {
-  top: -6px;
-  right: -6px;
+  top: -4px;
+  right: -4px;
   background: #ef4444;
 }
 
@@ -709,8 +687,8 @@ body.has-room-sidebar .room-banners {
 }
 
 .user-card-action.transfer {
-  top: -6px;
-  left: -6px;
+  top: -4px;
+  left: -4px;
   background: #f59e0b;
 }
 
@@ -727,8 +705,8 @@ body.has-room-sidebar .room-banners {
 }
 
 .card-flip {
-  width: var(--card-flip-w, 72px);
-  height: var(--card-flip-h, 104px);
+  width: var(--card-flip-w, 64px);
+  height: var(--card-flip-h, 64px);
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
@@ -743,7 +721,7 @@ body.has-room-sidebar .room-banners {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 50%;
   backface-visibility: hidden;
   overflow: hidden;
 }
@@ -753,7 +731,6 @@ body.has-room-sidebar .room-banners {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   background: var(--card-default-bg);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
@@ -814,40 +791,19 @@ body.has-room-sidebar .room-banners {
   -webkit-mask-size: 24px 24px;
 }
 
-.card-check {
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 26px;
-  font-weight: bold;
-}
 
-.card-waiting {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px dashed rgba(255, 255, 255, 0.45);
-}
 
 .card-back {
   background: var(--bg-primary);
-  border: 2px solid var(--border-color);
   transform: rotateY(180deg);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.card-back-stripe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  border-radius: 8px 8px 0 0;
-  background: var(--card-default-bg);
-}
 
 .card-vote {
-  font-size: 26px;
+  font-size: calc(var(--card-flip-w, 64px) * 0.4);
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -1px;
@@ -860,7 +816,7 @@ body.has-room-sidebar .room-banners {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: var(--card-flip-w, 72px);
+  max-width: calc(var(--card-flip-w, 64px) + 36px);
   text-align: center;
   display: flex;
   align-items: center;
@@ -1207,11 +1163,6 @@ body.has-room-sidebar .room-banners {
   to { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
 
-.room-sidebar.watching {
-  width: auto;
-  min-width: 0;
-}
-
 .room-stage-center {
   position: absolute;
   left: 50%;
@@ -1238,124 +1189,186 @@ body.has-room-sidebar .room-banners {
   font-size: 0.85rem;
 }
 
-/* ── Room body (sidebar + stage) ── */
+/* ── Room toolbar (top) + dock (bottom) ── */
 
-.room-body {
-  flex: 1 1 0;
-  min-height: 0;
+/* Floats over the top of the table instead of taking a row of its own. The banners share the row on
+   the left, the empty corner of the table, so neither they nor the table ever move when one shows. */
+.room-toolbar {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 0;
+  pointer-events: none;
 }
 
-.room-sidebar {
-  flex: 0 0 var(--sidebar-w);
+.room-banners {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  border-left: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  overflow: hidden;
-  min-height: 0;
+  align-items: center;
+  gap: 6px;
 }
 
-.sidebar-section {
+.room-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
 }
 
-.sidebar-section-controls,
-.sidebar-section-extras {
-  flex: 0 0 auto;
+.room-banners > *,
+.room-actions {
+  pointer-events: auto;
 }
 
-.sidebar-section-deck {
+/* Over the table the banners are floating pills, not full-width strips. */
+.room-banners > .connection-banner,
+.room-banners > .break-banner {
+  min-width: 0;
+  padding: 6px 14px;
+  gap: 10px;
+  white-space: nowrap;
+  border: 1px solid;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px var(--shadow-color);
+}
+
+/* A narrow row squeezes the text, never the icons or buttons. */
+.room-banners .break-banner-label {
+  min-width: 0;
+}
+
+.room-banners .break-banner-text,
+.room-banners .connection-banner > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-banners svg,
+.room-banners button {
+  flex-shrink: 0;
+}
+
+.break-banner-count {
+  display: none;
+}
+
+/* Where the emotes leave little room, the break pill shrinks to the icon and the count. */
+@media (max-width: 1100px) {
+  .room-banners .break-banner-text {
+    display: none;
+  }
+
+  .room-banners .break-banner-count {
+    display: inline;
+  }
+}
+
+.room-banners > .connection-banner.warning,
+.room-banners > .break-banner {
+  border-color: var(--tag-warning-border);
+}
+
+.room-banners > .connection-banner.error {
+  border-color: var(--tag-error-border);
+}
+
+/* Reveal/reset float in the bottom-right corner of the table, just above the dock's border. */
+.room-controls {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+  z-index: 30;
+}
+
+.room-controls .btn-control {
+  min-width: var(--controls-w);
+  justify-content: center;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.room {
+  --controls-w: 220px;
+}
+
+/* Narrower screens: the toolbar row would reach the top seat, so the stage always keeps room for it. */
+@media (max-width: 1560px) {
+  .room-body {
+    padding-top: 52px;
+  }
+}
+
+.room-body {
+  position: relative;
   flex: 1 1 0;
   min-height: 0;
+  display: flex;
+  align-items: stretch;
 }
 
-.sidebar-section-controls .control-buttons {
-  padding: 0;
-}
-
-.sidebar-section-controls .btn-control {
-  width: 100%;
-  justify-content: center;
-  min-height: clamp(44px, 7vh, 72px);
-  font-size: clamp(0.78rem, 1.5vh, 1rem);
-  padding: clamp(4px, 1.1vh, 10px) 16px;
-}
-
-.sidebar-section-deck .voting-deck {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 6px;
-  padding: 10px;
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.sidebar-section-deck .action-card {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  min-height: 0;
-}
-
-.sidebar-section-deck .action-card-center {
-  font-size: clamp(14px, 2.4vh, 28px);
-}
-
-.sidebar-section-deck .action-card-corner {
-  font-size: clamp(9px, 1.2vh, 13px);
-}
-
-.sidebar-section-extras .btn-break,
-.sidebar-section-extras .btn-seat {
-  font-size: clamp(0.72rem, 1.2vh, 0.92rem);
-  padding: clamp(4px, 1vh, 8px) 12px;
-}
-
-.sidebar-section-extras .reaction-btn {
-  font-size: clamp(1.05rem, 2vh, 1.5rem);
-}
-
-.sidebar-section-deck .action-card.hovered {
-  transform: translateY(-4px);
-}
-
-.sidebar-section-deck .action-card.selected {
-  transform: translateY(-6px);
-}
-
-.sidebar-section-extras {
-  margin-top: auto;
+.room-dock {
+  /* deck cards follow the window height, so the dock never eats a short screen */
+  --deck-h: clamp(54px, 10.5vh, 104px);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  /* the selected card rises by 0.13 of its height; the gap clears that plus a margin */
+  gap: calc(var(--deck-h) * 0.13 + clamp(6px, 1.2vh, 12px));
+  padding: clamp(14px, 2.4vh, 24px) 16px clamp(8px, 1.4vh, 16px);
+  border-top: 1px solid var(--border-color);
 }
 
-.sidebar-section-extras .reaction-bar {
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 6px 8px;
-  gap: 3px;
-  width: 100%;
+.room-dock.placeholder > * {
+  visibility: hidden;
 }
 
-.sidebar-section-extras .reaction-btn {
-  font-size: 1.25rem;
-  padding: 4px 6px;
+.room-dock .action-card {
+  width: calc(var(--deck-h) * 0.7);
+  height: var(--deck-h);
+  margin: 0 1px;
 }
 
-.sidebar-section-extras .btn-break,
-.sidebar-section-extras .btn-seat {
-  width: 100%;
-  justify-content: center;
+.room-dock .action-card-center {
+  font-size: calc(var(--deck-h) * 0.27);
+}
+
+.room-dock .action-card-corner {
+  font-size: calc(var(--deck-h) * 0.12);
+}
+
+.room-dock .action-card.hovered {
+  transform: translateY(calc(var(--deck-h) * -0.08));
+}
+
+.room-dock .action-card.selected {
+  transform: translateY(calc(var(--deck-h) * -0.13));
+}
+
+.room-dock .voting-deck {
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  gap: 5px;
+}
+
+.room-dock .hours-input {
+  width: min(170px, 100%);
+}
+
+.room-dock .hours-input input {
+  text-align: right;
+  padding-right: 2px;
 }
 
 /* ── Drawer ── */
@@ -1622,35 +1635,111 @@ body.has-room-sidebar .room-banners {
 .mini-view {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg-primary);
-  padding: 12px 16px;
-  gap: 12px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .mini-view-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.mini-view-reactions {
+.mini-view-title {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .mini-view-room {
-  font-size: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.mini-view-title .status-tag {
+  flex-shrink: 0;
+}
+
+.mini-view-header .btn-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.mini-view-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+
+.mini-view-toolbar .reaction-btn {
+  padding: 2px 4px;
+}
+
+.btn-break.compact,
+.btn-seat.compact {
+  padding: 6px 9px;
+}
+
+/* Everything below the toolbar, centred as one block; scrolls only if the window gets really small. */
+.mini-view-body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  gap: 14px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.mini-view-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-view-stage:empty {
+  display: none;
+}
+
+/* Fixed card size: one row in the default window, more rows as it narrows. */
+.mini-view-dock {
+  --deck-h: 80px;
+  flex: 0 0 auto;
+  width: 100%;
+  gap: calc(var(--deck-h) * 0.13 + 6px);
+  padding: 0;
+  border-top: none;
+}
+
+.mini-view-dock .voting-deck {
+  gap: calc(var(--deck-h) * 0.13 + 6px) 5px;
+}
+
+.mini-view-hours {
+  width: min(170px, 100%);
+}
+
+.mini-view-hours .hours-input {
+  width: 100%;
 }
 
 .tag-accent {
@@ -1682,10 +1771,6 @@ body.has-room-sidebar .room-banners {
   pointer-events: none;
 }
 
-body.has-room-sidebar .toast-container {
-  right: var(--sidebar-w);
-}
-
 
 .toast {
   position: absolute;
@@ -1701,12 +1786,6 @@ body.has-room-sidebar .toast-container {
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: toastIn 0.25s ease-out;
-}
-
-@media (max-width: 768px) {
-  body.has-room-sidebar .toast-container {
-    right: 0;
-  }
 }
 
 .toast-icon {
@@ -2170,14 +2249,15 @@ body.has-room-sidebar .toast-container {
 
 .user-card.editable .card-flip-container:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 10px;
+  outline-offset: 5px;
+  border-radius: 50%;
 }
 
 .user-card-edit-hint {
   position: absolute;
-  bottom: 22px;
-  right: -6px;
+  top: 50%;
+  left: 50%;
+  margin: -11px 0 0 -11px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -2447,8 +2527,9 @@ body.has-room-sidebar .toast-container {
 
 .user-card-throw-hint {
   position: absolute;
-  bottom: 16px;
-  right: -6px;
+  top: 50%;
+  left: 50%;
+  margin: -10px 0 0 -10px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -2674,25 +2755,446 @@ body.has-room-sidebar .toast-container {
     font-size: 1rem;
   }
 
-  .room-body {
-    flex-direction: column;
+  .room-toolbar {
+    padding: 8px 12px 0;
   }
+}
+/* ── Hours estimation (role + hours) ── */
 
-  .room-sidebar {
-    flex: 0 0 auto;
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-    overflow-y: visible;
-    padding: 12px;
-    gap: 10px;
-  }
+.form-panel .form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-panel .form-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.role-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.role-select-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.role-select-option {
+  padding: 0.55rem 0.5rem;
+  border: none;
+  border-right: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.role-select-option:last-child {
+  border-right: none;
+}
+
+.role-select-option:hover {
+  color: var(--accent);
+}
+
+.role-select-option.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.hours-input {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.hours-input-field {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.hours-input-field:focus-within {
+  border-color: var(--accent);
+}
+
+.hours-input.pending .hours-input-field {
+  border-color: var(--tag-warning-text);
+}
+
+.hours-input.invalid .hours-input-field {
+  border-color: var(--tag-error-text);
+}
+
+.hours-input.confirmed .hours-input-field {
+  border-color: var(--tag-success-text);
+}
+
+/* Locked after confirming: the value stays readable, only the controls fade. */
+.hours-input.confirmed input:disabled {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+.hours-input-unit {
+  align-self: center;
+  padding-right: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Confirm: accent while there is something to send, green once the server has it. */
+.hours-input-confirm {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.hours-input-confirm:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.hours-input-confirm:disabled {
+  border-color: var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hours-input.confirmed .hours-input-confirm {
+  border-color: var(--tag-success-border);
+  background: var(--tag-success-bg);
+  color: var(--tag-success-text);
+  opacity: 1;
+}
+
+.hours-input.confirmed .hours-input-confirm:hover:not(:disabled) {
+  filter: none;
+  border-color: var(--tag-success-text);
+}
+
+/* The check turns into a pencil on hover, hinting that the click reopens the field. */
+.hours-input-confirm .icon-edit,
+.hours-input.confirmed .hours-input-confirm:hover:not(:disabled) .icon-check {
+  display: none;
+}
+
+.hours-input-confirm .icon-check,
+.hours-input.confirmed .hours-input-confirm:hover:not(:disabled) .icon-edit {
+  display: flex;
+}
+
+.hours-input input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.hours-input input::-webkit-outer-spin-button,
+.hours-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.hours-input-arrows {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-color);
+}
+
+.hours-input-arrows button {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.hours-input-arrows button + button {
+  border-top: 1px solid var(--border-color);
+}
+
+.hours-input-arrows button:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--accent);
+}
+
+.hours-input-arrows button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 
 
-  .sidebar-section-deck .voting-deck {
-    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
-  }
+/* Role colours: solid behind white text on the seats, text-only in the summary. Each pair keeps
+   white-on-colour and colour-on-background readable in its own theme. */
+:root {
+  --role-dev: #4f46e5;
+  --role-qa: #0e7490;
+  --role-dev-text: #4f46e5;
+  --role-qa-text: #0e7490;
+}
 
-  .sidebar-section-extras .reaction-bar {
-    justify-content: center;
+[data-theme="dark"] {
+  --role-dev: #6366f1;
+  --role-qa: #0e7490;
+  --role-dev-text: #a5b4fc;
+  --role-qa-text: #67e8f9;
+}
+
+.vote-summary-hours {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.vote-summary-hours strong {
+  color: var(--text-primary);
+}
+
+.vote-summary-hours-item.role-dev strong {
+  color: var(--role-dev-text);
+}
+
+.vote-summary-hours-item.role-qa strong {
+  color: var(--role-qa-text);
+}
+
+.round-means {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+/* ── Avatar seat: progress ring + step badges ── */
+
+.avatar-wrap {
+  position: relative;
+  border-radius: 50%;
+}
+
+/* Right half lights up with the points, left half with the hours — the same sides the badges sit on. */
+.avatar-wrap::before {
+  content: '';
+  position: absolute;
+  --ring-w: max(2.5px, calc(var(--card-flip-w, 64px) * 0.035));
+  inset: calc(-1 * (var(--ring-w) + 1.5px));
+  padding: var(--ring-w);
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--ring-points, var(--border-color)) 0deg 180deg,
+    var(--ring-hours, var(--border-color)) 180deg 360deg
+  );
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+
+.avatar-wrap.points-done {
+  --ring-points: #16a34a;
+}
+
+.avatar-wrap.hours-done {
+  --ring-hours: #16a34a;
+}
+
+.avatar-wrap.revealed {
+  --ring-points: var(--accent);
+  --ring-hours: var(--accent);
+}
+
+.seat-step {
+  --step-size: max(22px, calc(var(--card-flip-w, 64px) * 0.5));
+  position: absolute;
+  bottom: calc(var(--step-size) * -0.14);
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: var(--step-size);
+  height: var(--step-size);
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  box-sizing: border-box;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.seat-step svg {
+  width: 58%;
+  height: 58%;
+}
+
+.seat-step-hours {
+  left: calc(var(--step-size) * -0.4);
+}
+
+.seat-step-points {
+  right: calc(var(--step-size) * -0.4);
+}
+
+.seat-step.done {
+  background: #16a34a;
+  color: #fff;
+}
+
+.seat-step.done svg {
+  animation: stepDone 0.42s cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+
+@keyframes stepDone {
+  0% { transform: scale(0.5); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.seat-hours {
+  position: absolute;
+  bottom: -4px;
+  /* anchored by its right edge, so a wider value grows outwards instead of over the vote */
+  right: calc(100% - var(--card-flip-w, 64px) * 0.18);
+  z-index: 4;
+  padding: 0 0.5em;
+  border-radius: 999px;
+  border: 2px solid var(--bg-primary);
+  background: var(--text-secondary);
+  color: #fff;
+  /* scaled like the vote inside the avatar; at 0.15 it sat on the 11px floor on every screen */
+  font-size: clamp(11px, calc(var(--card-flip-w, 64px) * 0.24), 16px);
+  font-weight: 700;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  animation: seatHoursIn 0.3s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+}
+
+.seat-hours.role-dev {
+  background: var(--role-dev);
+}
+
+.seat-hours.role-qa {
+  background: var(--role-qa);
+}
+
+@keyframes seatHoursIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* While waiting, the hourglass turns over and the two cards shuffle in the same window of the cycle;
+   the rest of the time both stay still. */
+
+.seat-step-hours:not(.done) svg {
+  animation: hourglassTurn 2400ms ease-in-out infinite;
+  animation-delay: var(--phase, 0ms);
+}
+
+@keyframes hourglassTurn {
+  0%, 45% { transform: rotate(0); }
+  60%, 100% { transform: rotate(180deg); }
+}
+
+.card-a,
+.card-b {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.card-a {
+  transform: rotate(-16deg);
+  fill: currentColor;
+  fill-opacity: 0;
+}
+
+.card-b {
+  fill-opacity: 0.22;
+}
+
+/* SVG paint order is fixed, so the cards trading places is faked by swapping fill mid-way. */
+.seat-step-points:not(.done) .card-a {
+  animation: shuffleA 2400ms linear infinite;
+  animation-delay: var(--phase, 0ms);
+}
+
+.seat-step-points:not(.done) .card-b {
+  animation: shuffleB 2400ms linear infinite;
+  animation-delay: var(--phase, 0ms);
+}
+
+@keyframes shuffleA {
+  0%, 45%, 62%, 100% { transform: rotate(-16deg) translate(0, 0); fill-opacity: 0; }
+  50% { transform: rotate(8deg) translate(4px, -2px); fill-opacity: 0.18; }
+  56% { transform: rotate(-6deg) translate(2px, 0); fill-opacity: 0.08; }
+}
+
+@keyframes shuffleB {
+  0%, 45%, 62%, 100% { transform: rotate(0) translate(0, 0); fill-opacity: 0.22; }
+  50% { transform: rotate(-24deg) translate(-4px, 2px); fill-opacity: 0.04; }
+  56% { transform: rotate(-8deg) translate(-2px, 0); fill-opacity: 0.14; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat-step.done svg,
+  .seat-hours,
+  .seat-step-hours:not(.done) svg,
+  .seat-step-points:not(.done) .card-a,
+  .seat-step-points:not(.done) .card-b {
+    animation: none;
   }
 }

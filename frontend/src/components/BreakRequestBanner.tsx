@@ -17,10 +17,11 @@ export default function BreakRequestBanner({ count, canClear, onClear }: BreakRe
     : t('break.countMany', { count: String(count) })
 
   return (
-    <div className="break-banner" key={count}>
+    <div className="break-banner" key={count} title={label}>
       <span className="break-banner-label">
         <CoffeeIcon />
-        {label}
+        <span className="break-banner-text">{label}</span>
+        <span className="break-banner-count" aria-hidden="true">{count}</span>
       </span>
       {canClear && (
         <button className="break-banner-clear" onClick={onClear}>

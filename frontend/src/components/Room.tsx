@@ -7,6 +7,7 @@ import { miniChannel } from '../hooks/miniChannel'
 import { useToast } from '../contexts/ToastContext'
 import { useI18n } from '../contexts/I18nContext'
 import { getDeckByKey } from '../constants/estimationOptions'
+import { DEFAULT_HOURS, estimatesHours, parseHours } from '../utils/hours'
 import RoomHeader from './RoomHeader'
 import PlayerGrid, { type PlayerView } from './PlayerGrid'
 import VoteSummary from './VoteSummary'
@@ -25,8 +26,9 @@ import BreakButton from './BreakButton'
 import WatcherList from './WatcherList'
 import WatcherEditor from './WatcherEditor'
 import AutoRevealCountdown from './AutoRevealCountdown'
+import HoursInput from './HoursInput'
 import { EyeIcon, SeatIcon, LoadingIcon } from './Icons'
-import type { RoomJoinError } from '../types/room'
+import type { PlayerRole, RoomJoinError } from '../types/room'
 import type { TranslationKey } from '../i18n/locales'
 
 const PLAYER_STYLE_KEY = 'playerStyle'
@@ -54,6 +56,8 @@ export default function Room() {
   const { showToast } = useToast()
   const { t } = useI18n()
   const [vote, setVote] = useState('')
+  const [hours, setHours] = useState(DEFAULT_HOURS)
+  const [sentHours, setSentHours] = useState<number | null>(null)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [miniViewOpen, setMiniViewOpen] = useState(false)
@@ -69,9 +73,11 @@ export default function Room() {
   const flipped = snapshot?.phase === 'REVEALED'
   const isLeader = snapshot?.ownerId === playerId
   const votingDeck = getDeckByKey(snapshot?.votingDeck ?? '').list
+  const hoursEnabled = snapshot?.hoursEnabled ?? false
 
   const players: PlayerView[] = useMemo(() => {
     if (!snapshot) return []
+    const revealed = snapshot.phase === 'REVEALED' ? snapshot.history[snapshot.history.length - 1] : undefined
     return snapshot.players.map(p => ({
       id: p.id,
       username: p.name,
@@ -81,11 +87,32 @@ export default function Room() {
       style: p.style,
       pattern: p.pattern,
       patternColor: p.patternColor,
+      role: p.role,
+      hasPoints: p.hasPoints,
+      hasHours: p.hasHours,
+      hours: revealed?.votes.find(v => v.playerId === p.id)?.hours ?? null,
     }))
   }, [snapshot])
 
   const selfPlayer = playerId !== null ? players.find(p => p.id === playerId) : undefined
   const selfWatcher = playerId !== null ? snapshot?.watchers.find(w => w.id === playerId) : undefined
+  const selfRole: PlayerRole | undefined = selfPlayer?.role ?? selfWatcher?.role
+  const needsHours = !isWatching && estimatesHours(hoursEnabled, selfRole)
+  const parsedHours = needsHours ? parseHours(hours) : null
+  const hoursConfirmed = !!selfPlayer?.hasHours && sentHours !== null
+
+  const confirmHoursRef = useRef<() => void>(() => {})
+  confirmHoursRef.current = () => {
+    if (!roomId || !needsHours || flipped || parsedHours === null || hoursConfirmed) return
+    const value = parsedHours
+    actions.submitHours(roomId, value).then(() => setSentHours(value)).catch(() => {})
+  }
+
+  const editHoursRef = useRef<() => void>(() => {})
+  editHoursRef.current = () => {
+    if (!roomId || !needsHours || flipped || !hoursConfirmed) return
+    actions.submitHours(roomId, null).then(() => setSentHours(null)).catch(() => {})
+  }
 
   const allVoted = players.length > 0 && players.every(u => u.hasVoted)
   const someVoted = players.some(u => u.hasVoted)
@@ -141,24 +168,33 @@ export default function Room() {
       actions.sendReaction(roomId, data.value as string).catch(() => {})
     } else if (data.type === 'BREAK' && roomId) {
       actions.toggleBreakRequest(roomId).catch(() => {})
+    } else if (data.type === 'HOURS' && typeof data.value === 'string') {
+      setHours(data.value)
+    } else if (data.type === 'HOURS_CONFIRM') {
+      confirmHoursRef.current()
+    } else if (data.type === 'HOURS_EDIT') {
+      editHoursRef.current()
     } else if (data.type === 'SEAT') {
       toggleSeat()
     } else if (data.type === 'REQUEST_SYNC' && snapshot && playerId) {
-      postRef.current({ type: 'SYNC', snapshot, playerId, vote })
+      postRef.current({ type: 'SYNC', snapshot, playerId, vote, hours, hoursConfirmed })
     }
-  }, [roomId, snapshot, playerId, vote, toggleSeat]))
+  }, [roomId, snapshot, playerId, vote, hours, hoursConfirmed, toggleSeat]))
 
   postRef.current = postToMini
 
   useEffect(() => {
     if (snapshot && playerId) {
-      postToMini({ type: 'SYNC', snapshot, playerId, vote })
+      postToMini({ type: 'SYNC', snapshot, playerId, vote, hours, hoursConfirmed })
     }
-  }, [snapshot, playerId, vote, postToMini])
+  }, [snapshot, playerId, vote, hours, hoursConfirmed, postToMini])
 
   useEffect(() => {
-    if (!selfPlayer?.hasVoted) setVote('')
-  }, [selfPlayer?.hasVoted])
+    if (flipped) return
+    setVote('')
+    setHours(DEFAULT_HOURS)
+    setSentHours(null)
+  }, [flipped, isWatching])
 
   const submitVote = async (value: string) => {
     if (!roomId) return
@@ -305,12 +341,6 @@ export default function Room() {
   }, [actions, roomId])
 
   useEffect(() => {
-    const sidebarVisible = !miniViewOpen
-    document.body.classList.toggle('has-room-sidebar', sidebarVisible)
-    return () => { document.body.classList.remove('has-room-sidebar') }
-  }, [isWatching, miniViewOpen])
-
-  useEffect(() => {
     if (!roomId || !playerId || !selfPlayer) return
     if (hydratedRoomRef.current === roomId) return
     hydratedRoomRef.current = roomId
@@ -343,7 +373,7 @@ export default function Room() {
     window.open(
       `/mini?owner=${encodeURIComponent(playerId ?? '')}`,
       `planning-poker-mini-${playerId ?? 'none'}`,
-      'width=520,height=400,resizable=yes,scrollbars=no',
+      'width=780,height=400,resizable=yes,scrollbars=no',
     )
   }
 
@@ -365,13 +395,31 @@ export default function Room() {
           onOpenMiniView={openMiniView}
         />
 
-        <div className="room-banners">
-          <ConnectionBanner status={status} onRetry={retryNow} />
-          <BreakRequestBanner
-            count={breakCount}
-            canClear={isLeader}
-            onClear={clearBreakRequests}
-          />
+        <div className="room-toolbar">
+          <div className="room-banners">
+            <ConnectionBanner status={status} onRetry={retryNow} />
+            <BreakRequestBanner
+              count={breakCount}
+              canClear={isLeader}
+              onClear={clearBreakRequests}
+            />
+          </div>
+          {!miniViewOpen && (
+            <div className="room-actions">
+              <ReactionBar onSend={sendReaction} />
+              <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
+              <button
+                type="button"
+                className="btn-seat"
+                onClick={toggleSeat}
+                disabled={seatLoading || flipped}
+                title={flipped ? t('seat.revealed') : isWatching ? t('seat.take') : t('seat.leave')}
+              >
+                {seatLoading ? <LoadingIcon /> : isWatching ? <SeatIcon /> : <EyeIcon />}
+                {isWatching ? t('seat.take') : t('seat.leave')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -385,6 +433,7 @@ export default function Room() {
             currentPlayerId={playerId}
             isLeader={isLeader}
             flipped={flipped}
+            hoursEnabled={hoursEnabled}
             onKick={requestKick}
             onTransfer={requestTransfer}
             onEditStyle={() => setStyleEditorOpen(true)}
@@ -406,6 +455,8 @@ export default function Room() {
               flipped={flipped}
               votes={revealedVotes}
               votingDeck={votingDeck}
+              hoursEnabled={hoursEnabled}
+              roundVotes={revealedRound?.votes ?? []}
             />
             <AutoRevealCountdown
               active={!flipped && (snapshot?.everyoneVoted ?? false) && (snapshot?.autoRevealEnabled ?? false)}
@@ -414,50 +465,50 @@ export default function Room() {
           </div>
         </div>
 
-        {!miniViewOpen && (
-          <aside className={`room-sidebar ${isWatching ? 'watching' : ''}`}>
-            {(!isWatching || isLeader) && <div className="sidebar-section sidebar-section-controls">
-              <VotingControls
-                isLeader={isLeader}
-                flipped={flipped}
-                allVoted={allVoted}
-                someVoted={someVoted}
-                revealLoading={revealLoading}
-                resetLoading={resetLoading}
-                onReveal={revealVotes}
-                onReset={resetVotes}
-              />
-            </div>}
-            {!isWatching && <div className="sidebar-section sidebar-section-deck">
-              <VotingDeck
-                cards={votingDeck}
-                selectedVote={vote}
-                onVote={submitVote}
-                disabled={flipped}
-              />
-            </div>}
-            <div className="sidebar-section sidebar-section-extras">
-              <ReactionBar onSend={sendReaction} />
-              <BreakButton active={hasActiveBreakRequest} onClick={toggleBreakRequest} />
-              <button
-                type="button"
-                className="btn-seat"
-                onClick={toggleSeat}
-                disabled={seatLoading || flipped}
-                title={flipped ? t('seat.revealed') : isWatching ? t('seat.take') : t('seat.leave')}
-              >
-                {seatLoading ? <LoadingIcon /> : isWatching ? <SeatIcon /> : <EyeIcon />}
-                {isWatching ? t('seat.take') : t('seat.leave')}
-              </button>
-            </div>
-          </aside>
+        {!miniViewOpen && isLeader && (
+          <div className="room-controls">
+            <VotingControls
+              isLeader={isLeader}
+              flipped={flipped}
+              allVoted={allVoted}
+              someVoted={someVoted}
+              revealLoading={revealLoading}
+              resetLoading={resetLoading}
+              onReveal={revealVotes}
+              onReset={resetVotes}
+            />
+          </div>
         )}
       </div>
+
+      {!miniViewOpen && (
+        <div className={`room-dock ${isWatching ? 'placeholder' : ''}`} inert={isWatching}>
+          {selfRole && estimatesHours(hoursEnabled, selfRole) && (
+            <HoursInput
+              role={selfRole}
+              value={hours}
+              onChange={setHours}
+              confirmed={hoursConfirmed}
+              onConfirm={() => confirmHoursRef.current()}
+              onEdit={() => editHoursRef.current()}
+              pending={needsHours && vote !== '' && !hoursConfirmed}
+              disabled={flipped || isWatching}
+            />
+          )}
+          <VotingDeck
+            cards={votingDeck}
+            selectedVote={vote}
+            onVote={submitVote}
+            disabled={flipped || isWatching}
+          />
+        </div>
+      )}
 
       <RoundHistory
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         history={history}
+        hoursEnabled={hoursEnabled}
       />
 
       <ReactionOverlay />

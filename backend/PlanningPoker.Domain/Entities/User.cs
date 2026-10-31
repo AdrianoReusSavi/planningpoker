@@ -1,3 +1,5 @@
+using PlanningPoker.Domain.Enums;
+
 namespace PlanningPoker.Domain.Entities;
 
 public class User
@@ -6,6 +8,8 @@ public class User
     public required string ConnectionId { get; set; }
     public required string Username { get; set; }
     public string? Vote { get; set; }
+    public decimal? Hours { get; set; }
+    public PlayerRole Role { get; set; }
     public bool Connected { get; set; } = true;
     public string? Style { get; set; }
     public string? Pattern { get; set; }

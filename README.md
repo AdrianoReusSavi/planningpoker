@@ -40,6 +40,7 @@ Planning Poker is a real-time estimation tool for agile teams. Create a room, in
 - Circular "table" layout (up to 10 players) with auto-rebalancing as players join/leave; cards and ellipse scale with viewport so no scroll on zoom in
 - Vote summary as a centered medallion on the table when revealed (approximate + exact mean)
 - Round history with per-round statistics
+- Optional Dev/QA hour estimation: the room creator turns it on, each player picks a role (Dev, QA or Other, saved locally) and enters hours along with the points; hours are revealed with the cards, with separate Dev and QA means
 - Throwables: tap another player's card to throw a turtle 🐢, tomato 🍅, heart ❤️, "didn't get it" 🤔 or rocket 🚀 — parabolic flight, themed impact ring and emoji-particle burst (heart particles trace a heart curve)
 - Anonymous emoji reactions that float upward from the sender's own card
 - Anonymous coffee break counter with clear-all for the room owner

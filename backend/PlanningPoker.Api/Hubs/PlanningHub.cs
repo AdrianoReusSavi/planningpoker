@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using PlanningPoker.Api.Contracts;
 using PlanningPoker.Application.Interfaces;
+using PlanningPoker.Application.Results;
 using PlanningPoker.Domain.Enums;
 using PlanningPoker.Domain.Snapshots;
 
@@ -17,13 +18,14 @@ public class PlanningHub(
     private static readonly ConcurrentDictionary<string, DateTime> LastActionTime = new();
     private static readonly TimeSpan ActionCooldown = TimeSpan.FromMilliseconds(200);
     private const int DisconnectTimeoutSeconds = 300;
+    private const string HoursCooldownSlot = "hours";
 
     public async Task Ping()
         => await Clients.Caller.SendAsync("Pong");
 
-    public async Task<JoinRoomResponse> CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher)
+    public async Task<JoinRoomResponse> CreateRoom(string name, string roomName, EstimationOptions votingDeck, bool asWatcher, bool hoursEnabled, PlayerRole role)
     {
-        var outcome = roomService.CreateRoom(name, roomName, votingDeck, asWatcher, Context.ConnectionId);
+        var outcome = roomService.CreateRoom(name, roomName, votingDeck, asWatcher, Context.ConnectionId, hoursEnabled, role);
         if (outcome.Created is null) return JoinRoomResponse.Rejected(outcome.Error);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Created.RoomId);
@@ -31,9 +33,9 @@ public class PlanningHub(
         return JoinRoomResponse.Accepted(outcome.Created.ParticipantId);
     }
 
-    public async Task<JoinRoomResponse> EnterRoom(string roomId, string name)
+    public async Task<JoinRoomResponse> EnterRoom(string roomId, string name, PlayerRole role)
     {
-        var outcome = roomService.EnterRoom(roomId, name, Context.ConnectionId);
+        var outcome = roomService.EnterRoom(roomId, name, Context.ConnectionId, role);
         if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Joined.RoomId);
@@ -42,9 +44,9 @@ public class PlanningHub(
         return JoinRoomResponse.Accepted(outcome.Joined.PlayerId);
     }
 
-    public async Task<JoinRoomResponse> WatchRoom(string roomId, string name)
+    public async Task<JoinRoomResponse> WatchRoom(string roomId, string name, PlayerRole role)
     {
-        var outcome = roomService.WatchRoom(roomId, name, Context.ConnectionId);
+        var outcome = roomService.WatchRoom(roomId, name, Context.ConnectionId, role);
         if (outcome.Joined is null) return JoinRoomResponse.Rejected(outcome.Error);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, outcome.Joined.RoomId);
@@ -92,8 +94,8 @@ public class PlanningHub(
         return true;
     }
 
-    public string? GetRoomName(string roomId)
-        => roomService.GetRoomName(roomId);
+    public RoomPreview? GetRoomPreview(string roomId)
+        => roomService.GetRoomPreview(roomId);
 
     public async Task GetRoomSettings()
     {
@@ -114,6 +116,17 @@ public class PlanningHub(
         if (!IsActionAllowed()) return;
 
         var snapshot = roomService.SubmitVote(roomId, vote, Context.ConnectionId);
+        if (snapshot is null) return;
+
+        await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
+        EvaluateAutoReveal(roomId, snapshot, restart: true);
+    }
+
+    public async Task SubmitHours(string roomId, decimal? hours)
+    {
+        if (!IsActionAllowed(HoursCooldownSlot)) return;
+
+        var snapshot = roomService.SubmitHours(roomId, hours, Context.ConnectionId);
         if (snapshot is null) return;
 
         await Clients.Group(roomId).SendAsync("STATE_SYNC", snapshot);
@@ -169,7 +182,7 @@ public class PlanningHub(
         var result = roomService.KickPlayer(roomId, targetPlayerId, Context.ConnectionId);
         if (result is null) return;
 
-        LastActionTime.TryRemove(result.TargetConnectionId, out _);
+        ForgetCooldowns(result.TargetConnectionId);
         CancelDisconnectTimer(targetPlayerId);
         await Groups.RemoveFromGroupAsync(result.TargetConnectionId, roomId);
         await Clients.Client(result.TargetConnectionId).SendAsync("KICKED");
@@ -241,7 +254,7 @@ public class PlanningHub(
         if (result.PlayerId is not null)
             CancelDisconnectTimer(result.PlayerId);
 
-        LastActionTime.TryRemove(Context.ConnectionId, out _);
+        ForgetCooldowns(Context.ConnectionId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
 
         if (result.Snapshot is not null)
@@ -253,7 +266,7 @@ public class PlanningHub(
 
     public override async Task OnDisconnectedAsync(Exception? ex)
     {
-        LastActionTime.TryRemove(Context.ConnectionId, out _);
+        ForgetCooldowns(Context.ConnectionId);
 
         var result = roomService.HandleDisconnect(Context.ConnectionId);
         if (result is not null)
@@ -265,14 +278,23 @@ public class PlanningHub(
         await base.OnDisconnectedAsync(ex);
     }
 
-    private bool IsActionAllowed()
+    private bool IsActionAllowed(string? slot = null)
     {
         var now = DateTime.UtcNow;
-        var connId = Context.ConnectionId;
-        if (LastActionTime.TryGetValue(connId, out var last) && now - last < ActionCooldown)
+        var key = CooldownKey(Context.ConnectionId, slot);
+        if (LastActionTime.TryGetValue(key, out var last) && now - last < ActionCooldown)
             return false;
-        LastActionTime[connId] = now;
+        LastActionTime[key] = now;
         return true;
+    }
+
+    private static string CooldownKey(string connectionId, string? slot)
+        => slot is null ? connectionId : $"{connectionId}:{slot}";
+
+    private static void ForgetCooldowns(string connectionId)
+    {
+        LastActionTime.TryRemove(connectionId, out _);
+        LastActionTime.TryRemove(CooldownKey(connectionId, HoursCooldownSlot), out _);
     }
 
     private void EvaluateAutoReveal(string roomId, RoomSnapshot snapshot, bool restart = false)

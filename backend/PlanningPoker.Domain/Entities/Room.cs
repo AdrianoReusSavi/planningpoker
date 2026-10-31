@@ -14,6 +14,7 @@ public class Room
     public List<User> Users { get; set; } = [];
     public List<Watcher> Watchers { get; } = [];
     public EstimationOptions VotingDeck { get; set; }
+    public bool HoursEnabled { get; init; }
     public RoomPhase Phase { get; private set; } = RoomPhase.Waiting;
 
     private readonly List<RoundRecord> _history = [];
@@ -29,6 +30,8 @@ public class Room
     public const int MaxNameLength = 50;
     public const int MaxRoomNameLength = 30;
     public const int MaxVoteLength = 10;
+    public const decimal MinHours = 0.5m;
+    public const decimal MaxHours = 999m;
 
     public void StartVoting()
     {
@@ -58,6 +61,27 @@ public class Room
                 ?? throw new InvalidOperationException("Player not found in room.");
 
             user.Vote = value.Trim();
+        }
+        finally { _lock.ExitWriteLock(); }
+    }
+
+    public void SubmitHours(string playerId, decimal? hours)
+    {
+        if (hours is { } h && !IsValidHours(h))
+            throw new ArgumentException("Hours must be between 0.5 and 999, in steps of 0.5.");
+
+        _lock.EnterWriteLock();
+        try
+        {
+            if (Phase != RoomPhase.Voting)
+                throw new InvalidOperationException("Hours can only be submitted during VOTING phase.");
+
+            var user = Users.FirstOrDefault(u => u.PlayerId == playerId)
+                ?? throw new InvalidOperationException("Player not found in room.");
+            if (!EstimatesHours(user))
+                throw new InvalidOperationException("This player does not estimate hours.");
+
+            user.Hours = hours;
         }
         finally { _lock.ExitWriteLock(); }
     }
@@ -97,7 +121,7 @@ public class Room
 
             var votes = Users
                 .Where(u => u.Vote is not null)
-                .Select(u => new RoundVote(u.PlayerId, u.Username, u.Vote!))
+                .Select(u => new RoundVote(u.PlayerId, u.Username, u.Vote!, u.Role, EstimatesHours(u) ? u.Hours : null))
                 .ToList();
 
             _history.Add(new RoundRecord(_roundNumber, votes, Users.Count, DateTime.UtcNow));
@@ -115,7 +139,7 @@ public class Room
         {
             if (Phase != RoomPhase.Revealed)
                 throw new InvalidOperationException($"Cannot reset from phase {Phase}.");
-            Users.ForEach(u => u.Vote = null);
+            Users.ForEach(u => { u.Vote = null; u.Hours = null; });
             Phase = RoomPhase.Voting;
         }
         finally { _lock.ExitWriteLock(); }
@@ -206,6 +230,7 @@ public class Room
                 PlayerId = watcher.WatcherId,
                 ConnectionId = watcher.ConnectionId,
                 Username = watcher.Username,
+                Role = watcher.Role,
                 Connected = watcher.Connected
             });
 
@@ -233,6 +258,7 @@ public class Room
                 WatcherId = user.PlayerId,
                 ConnectionId = user.ConnectionId,
                 Username = user.Username,
+                Role = user.Role,
                 Connected = user.Connected,
                 Accent = accent,
                 Character = character
@@ -404,6 +430,18 @@ public class Room
         finally { _lock.ExitWriteLock(); }
     }
 
+    private bool EstimatesHours(User user)
+        => HoursEnabled && user.Role != PlayerRole.None;
+
+    private bool HasHours(User user)
+        => EstimatesHours(user) && user.Hours is not null;
+
+    private bool HasVoted(User user)
+        => user.Vote is not null && (!EstimatesHours(user) || user.Hours is not null);
+
+    private static bool IsValidHours(decimal hours)
+        => hours is >= MinHours and <= MaxHours && hours * 2 == decimal.Truncate(hours * 2);
+
     private bool? ParticipantConnected(string participantId)
         => Users.FirstOrDefault(u => u.PlayerId == participantId)?.Connected
             ?? Watchers.FirstOrDefault(w => w.WatcherId == participantId)?.Connected;
@@ -444,11 +482,11 @@ public class Room
         try
         {
             var players = Users
-                .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, u.Vote is not null, u.Connected, u.Style, u.Pattern, u.PatternColor))
+                .Select(u => new PlayerSnapshot(u.PlayerId, u.Username, HasVoted(u), u.Connected, u.Style, u.Pattern, u.PatternColor, u.Role, u.Vote is not null, HasHours(u)))
                 .ToList();
 
             var watchers = Watchers
-                .Select(w => new WatcherSnapshot(w.WatcherId, w.Username, w.Connected, w.Accent, w.Character))
+                .Select(w => new WatcherSnapshot(w.WatcherId, w.Username, w.Connected, w.Accent, w.Character, w.Role))
                 .ToList();
 
             var votes = Phase == RoomPhase.Revealed && _history.Count > 0
@@ -460,6 +498,7 @@ public class Room
                 OwnerId,
                 RoomName,
                 VotingDeck.ToString(),
+                HoursEnabled,
                 Phase.ToString().ToUpperInvariant(),
                 players,
                 watchers,
